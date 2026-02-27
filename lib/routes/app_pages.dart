@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import '../presentation/screens/auth/login_screen.dart';
-import '../presentation/screens/home/home_screen.dart';
+import '../presentation/screens/main/main_screen.dart';
+import '../presentation/screens/detail/manga_detail_screen.dart';
+import '../presentation/screens/reader/reader_screen.dart';
+import '../data/models/manga_detail.dart';
+import '../data/models/reader_content.dart';
 
 class AppRoutes {
   static const String login = '/login';
   static const String home = '/home';
+  static const String detail = '/detail';
+  static const String reader = '/reader';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (context) => const LoginScreen(),
-    home: (context) => const HomeScreen(),
+    home: (context) => const MainScreen(),
+    detail: (context) {
+      final manga = ModalRoute.of(context)!.settings.arguments as MangaDetail;
+      return MangaDetailScreen(manga: manga);
+    },
+    reader: (context) {
+      final content =
+          ModalRoute.of(context)!.settings.arguments as ReaderContent;
+      return ReaderScreen(content: content);
+    },
   };
 }

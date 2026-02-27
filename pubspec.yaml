@@ -7,10 +7,12 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  dio: ^5.9.1
   flutter:
     sdk: flutter
   flutter_svg: ^2.2.3
   font_awesome_flutter: ^10.12.0
+  get_it: ^9.2.1
   google_fonts: ^8.0.2  
 
 dev_dependencies:

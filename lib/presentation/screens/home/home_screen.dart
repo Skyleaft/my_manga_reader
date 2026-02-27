@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -8,28 +9,41 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context, isDark),
-                  const SizedBox(height: 24),
-                  _buildTrendingManga(context),
-                  const SizedBox(height: 32),
-                  _buildLatestUpdates(context, isDark),
-                  const SizedBox(height: 32),
-                  _buildRecommendedGrid(context),
-                ],
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            backgroundColor:
+                (isDark ? AppColors.backgroundDark : AppColors.backgroundLight)
+                    .withOpacity(0.8),
+            surfaceTintColor: Colors.transparent,
+            expandedHeight: 100,
+            toolbarHeight: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              background: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: _buildHeader(context, isDark),
+                ),
               ),
             ),
-            _buildBottomNav(context, isDark),
-          ],
-        ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 150),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 24),
+                _buildTrendingManga(context),
+                const SizedBox(height: 32),
+                _buildLatestUpdates(context, isDark),
+                const SizedBox(height: 32),
+                _buildRecommendedGrid(context),
+              ]),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -485,55 +499,6 @@ class HomeScreen extends StatelessWidget {
           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context, bool isDark) {
-    return Positioned(
-      bottom: 24,
-      left: 24,
-      right: 24,
-      child: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.home, 'Home', true),
-            _buildNavItem(Icons.auto_stories, 'Library', false),
-            _buildNavItem(Icons.explore, 'Discover', false),
-            _buildNavItem(Icons.more_horiz, 'More', false),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isActive ? AppColors.primary : Colors.grey, size: 24),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.primary : Colors.grey,
-            fontSize: 10,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
         ),
       ],
     );

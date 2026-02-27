@@ -1,0 +1,259 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/widgets/discover_card.dart';
+import '../../../data/models/manga_detail.dart';
+import '../../../data/models/manga_summary.dart';
+import '../../../data/services/manga_api_service.dart';
+import '../../../routes/app_pages.dart';
+import 'widgets/discover_header.dart';
+import 'widgets/scrap_manga_dialog.dart';
+import 'widgets/scrap_queue_dialog.dart';
+
+class DiscoverScreen extends StatefulWidget {
+  const DiscoverScreen({super.key});
+
+  @override
+  State<DiscoverScreen> createState() => _DiscoverScreenState();
+}
+
+class _DiscoverScreenState extends State<DiscoverScreen> {
+  final MangaApiService _apiService = getIt<MangaApiService>();
+  final List<MangaSummary> _items = [];
+  bool _isLoading = false;
+  bool _isMoreLoading = false;
+  int _currentPage = 1;
+  final int _pageSize = 10;
+  bool _hasMore = true;
+  String? _searchQuery;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData({bool refresh = false}) async {
+    if (refresh) {
+      if (!mounted) return;
+      setState(() {
+        _currentPage = 1;
+        _items.clear();
+        _hasMore = true;
+        _isLoading = true;
+      });
+    } else if (!_hasMore || _isMoreLoading) {
+      return;
+    }
+
+    if (_currentPage > 1) {
+      setState(() {
+        _isMoreLoading = true;
+      });
+    }
+
+    try {
+      final response = await _apiService.getPagedManga(
+        page: _currentPage,
+        pageSize: _pageSize,
+        search: _searchQuery,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _items.addAll(response.items);
+        _isLoading = false;
+        _isMoreLoading = false;
+        _hasMore = _items.length < response.totalCount;
+        if (_hasMore) _currentPage++;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _isMoreLoading = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  void _onSearch(String value) {
+    _searchQuery = value.isEmpty ? null : value;
+    _fetchData(refresh: true);
+  }
+
+  void _onScrapManga() {
+    showDialog(
+      context: context,
+      builder: (context) => ScrapMangaDialog(
+        onScrapped: () {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Scraping started!')));
+          _fetchData(refresh: true);
+        },
+      ),
+    );
+  }
+
+  void _onShowQueue() {
+    showDialog(
+      context: context,
+      builder: (context) => const ScrapQueueDialog(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SafeArea(
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollEndNotification &&
+              notification.metrics.extentAfter < 500) {
+            _fetchData();
+          }
+          return false;
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              backgroundColor:
+                  (isDark
+                          ? AppColors.backgroundDark
+                          : AppColors.backgroundLight)
+                      .withOpacity(0.8),
+              surfaceTintColor: Colors.transparent,
+              expandedHeight: 250,
+              toolbarHeight: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                background: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: DiscoverHeader(
+                      isDark: isDark,
+                      onSearch: _onSearch,
+                      onScrapManga: _onScrapManga,
+                      onShowQueue: _onShowQueue,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_isLoading)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
+            else if (_items.isEmpty)
+              const SliverFillRemaining(
+                child: Center(child: Text('No manga found')),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 24,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.65,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index == _items.length) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final item = _items[index];
+
+                    return DiscoverCard(
+                      title: item.title,
+                      type: item.type,
+                      chapter: 0,
+                      views: '${(item.totalView / 1000).toStringAsFixed(1)}K',
+                      genres: item.genres ?? [],
+                      imageUrl: _apiService.getLocalImageUrl(
+                        item.localImageUrl,
+                        item.imageUrl,
+                      ),
+                      onTap: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+
+                        try {
+                          final detailData = await _apiService.getMangaDetail(
+                            item.id,
+                          );
+                          if (!mounted) return;
+                          Navigator.pop(context); // Close loading dialog
+
+                          final mangaDetail = MangaDetail(
+                            id: item.id,
+                            title: detailData['title'] as String,
+                            author: detailData['author'] as String,
+                            imageUrl: _apiService.getLocalImageUrl(
+                              detailData['localImageUrl'] as String?,
+                              detailData['imageUrl'] as String?,
+                            ),
+                            rating: 4.8,
+                            reviewCount: '1.2k reviews',
+                            genres:
+                                (detailData['genres'] as List<dynamic>?)
+                                    ?.map((e) => e as String)
+                                    .toList() ??
+                                [],
+                            synopsis:
+                                detailData['description'] as String? ??
+                                'No description available',
+                            chapters:
+                                (detailData['chapters'] as List<dynamic>?)
+                                    ?.map(
+                                      (c) => Chapter(
+                                        title: 'Chapter ${c['number']}',
+                                        chapterNumber: (c['number'] as num)
+                                            .toDouble(),
+                                        date: DateTime.parse(
+                                          c['uploadDate'] as String,
+                                        ),
+                                        isNew: false,
+                                      ),
+                                    )
+                                    .toList() ??
+                                [],
+                          );
+
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.detail,
+                            arguments: mangaDetail,
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to load details: $e'),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  }, childCount: _items.length + (_isMoreLoading ? 1 : 0)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

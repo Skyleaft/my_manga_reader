@@ -7,6 +7,15 @@
     
 
         {
+            "name": "my_manga_reader (Dev)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define",
+                "BASE_URL=http://11.1.1.4:5009"
+            ]
+        },
+        {
             "name": "my_manga_reader",
             "request": "launch",
             "type": "dart"
