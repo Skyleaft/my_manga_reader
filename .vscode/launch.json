@@ -7,6 +7,30 @@
     
 
         {
+            "name": "my_manga_reader (Web)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "chrome",
+                "--web-browser-flag",
+                "--disable-web-security"
+            ]
+        },
+        {
+            "name": "my_manga_reader (Web Dev)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "chrome",
+                "--dart-define",
+                "BASE_URL=http://11.1.1.4:5009",
+                "--web-browser-flag",
+                "--disable-web-security"
+            ]
+        },
+        {
             "name": "my_manga_reader (Dev)",
             "request": "launch",
             "type": "dart",

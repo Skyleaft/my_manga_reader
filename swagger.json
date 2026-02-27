@@ -44,6 +44,30 @@
         }
       }
     },
+    "/api/scrapper/manga/{mangaId}/chapter-pages": {
+      "get": {
+        "tags": [
+          "Api"
+        ],
+        "operationId": "MangaScrapperFeaturesScrapperScrapChapterPagesEndpoint",
+        "parameters": [
+          {
+            "name": "mangaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/scrapper/queue": {
       "get": {
         "tags": [
@@ -419,6 +443,10 @@
           }
         }
       },
+      "MangaScrapperFeaturesScrapperScrapChapterPagesRequest": {
+        "type": "object",
+        "additionalProperties": false
+      },
       "MangaScrapperInfrastructureBackgroundJobsQueueItem": {
         "type": "object",
         "additionalProperties": false,
@@ -522,6 +550,31 @@
           "totalView": {
             "type": "integer",
             "format": "int32"
+          },
+          "latestChapter": {
+            "$ref": "#/components/schemas/MangaScrapperFeaturesMangaGetPagedLatestChapterSummary"
+          }
+        }
+      },
+      "MangaScrapperFeaturesMangaGetPagedLatestChapterSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "number": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalView": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uploadDate": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -571,6 +624,9 @@
           "uploadDate": {
             "type": "string",
             "format": "date-time"
+          },
+          "isChapterAvailable": {
+            "type": "boolean"
           }
         }
       },

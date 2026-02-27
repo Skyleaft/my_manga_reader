@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/di/injection.dart';
 import '../../../data/models/manga_detail.dart';
@@ -155,7 +156,17 @@ class MangaDetailScreen extends StatelessWidget {
               icon: Icons.arrow_back,
               onPressed: () => Navigator.pop(context),
             ),
-            _buildRoundIconButton(icon: Icons.share, onPressed: () {}),
+            Row(
+              children: [
+                if (manga.url != null)
+                  _buildRoundIconButton(
+                    icon: Icons.public,
+                    onPressed: () => launchUrlString(manga.url!),
+                  ),
+                const SizedBox(width: 8),
+                _buildRoundIconButton(icon: Icons.share, onPressed: () {}),
+              ],
+            ),
           ],
         ),
       ),
@@ -295,17 +306,23 @@ class MangaDetailScreen extends StatelessWidget {
           flex: 4,
           child: ElevatedButton.icon(
             onPressed: () {
-              if (manga.chapters.isNotEmpty) {
-                final firstChapter = manga.chapters.last;
+              final availableChapters = manga.chapters
+                  .where((c) => c.isChapterAvailable)
+                  .toList();
+              if (availableChapters.isNotEmpty) {
+                // Assuming last is first chapter (earliest)
+                final firstAvailable = availableChapters.last;
                 _navigateToReader(
                   context,
-                  firstChapter.chapterNumber,
-                  firstChapter.title,
+                  firstAvailable.chapterNumber,
+                  firstAvailable.title,
                 );
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: manga.chapters.any((c) => c.isChapterAvailable)
+                  ? AppColors.primary
+                  : Colors.grey[700],
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -385,47 +402,56 @@ class MangaDetailScreen extends StatelessWidget {
   }
 
   Widget _buildChapterItem(BuildContext context, Chapter chapter, bool isDark) {
+    final bool isAvailable = chapter.isChapterAvailable;
+
     return InkWell(
-      onTap: () =>
-          _navigateToReader(context, chapter.chapterNumber, chapter.title),
+      onTap: isAvailable
+          ? () =>
+                _navigateToReader(context, chapter.chapterNumber, chapter.title)
+          : null,
       borderRadius: BorderRadius.circular(36),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.grey[800]!.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(36),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  chapter.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.white,
+      child: Opacity(
+        opacity: isAvailable ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.grey[800]!.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(36),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    chapter.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color.fromARGB(255, 189, 189, 189),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color.fromARGB(255, 189, 189, 189),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            if (chapter.isNew)
-              _buildStatusBadge('NEW', AppColors.primary, Colors.white)
-            else if (chapter.isRead)
-              _buildStatusBadge('READ', Colors.grey[700]!, Colors.grey[400]!)
-            else
-              const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
+                ],
+              ),
+              if (!isAvailable)
+                _buildStatusBadge('SOON', Colors.grey[700]!, Colors.white70)
+              else if (chapter.isNew)
+                _buildStatusBadge('NEW', AppColors.primary, Colors.white)
+              else if (chapter.isRead)
+                _buildStatusBadge('READ', Colors.grey[700]!, Colors.grey[400]!)
+              else
+                const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );

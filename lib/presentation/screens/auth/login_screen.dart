@@ -124,29 +124,7 @@ class LoginScreen extends StatelessWidget {
                     textColor: isDark ? Colors.white : AppColors.slate800,
                   ),
                   const SizedBox(height: 16),
-                  // Email Button
-                  _buildButton(
-                    context: context,
-                    icon: const Icon(Icons.mail, color: Colors.white),
-                    label: "Continue with Email",
-                    onPressed: () {},
-                    backgroundColor: AppColors.primary,
-                    textColor: Colors.white,
-                    hasShadow: true,
-                  ),
-                  const SizedBox(height: 12),
-                  // Guest Button
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      "Continue as Guest",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white70 : AppColors.slate500,
-                      ),
-                    ),
-                  ),
+
                   const Spacer(),
                   // Footer Terms
                   Text.rich(

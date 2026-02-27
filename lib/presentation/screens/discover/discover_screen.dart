@@ -197,39 +197,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           if (!mounted) return;
                           Navigator.pop(context); // Close loading dialog
 
-                          final mangaDetail = MangaDetail(
-                            id: item.id,
-                            title: detailData['title'] as String,
-                            author: detailData['author'] as String,
+                          final mangaDetail = MangaDetail.fromMap(
+                            detailData,
                             imageUrl: _apiService.getLocalImageUrl(
                               detailData['localImageUrl'] as String?,
                               detailData['imageUrl'] as String?,
                             ),
-                            rating: 4.8,
-                            reviewCount: '1.2k reviews',
-                            genres:
-                                (detailData['genres'] as List<dynamic>?)
-                                    ?.map((e) => e as String)
-                                    .toList() ??
-                                [],
-                            synopsis:
-                                detailData['description'] as String? ??
-                                'No description available',
-                            chapters:
-                                (detailData['chapters'] as List<dynamic>?)
-                                    ?.map(
-                                      (c) => Chapter(
-                                        title: 'Chapter ${c['number']}',
-                                        chapterNumber: (c['number'] as num)
-                                            .toDouble(),
-                                        date: DateTime.parse(
-                                          c['uploadDate'] as String,
-                                        ),
-                                        isNew: false,
-                                      ),
-                                    )
-                                    .toList() ??
-                                [],
                           );
 
                           Navigator.pushNamed(
