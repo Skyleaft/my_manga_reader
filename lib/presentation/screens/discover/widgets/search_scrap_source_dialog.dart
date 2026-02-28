@@ -87,21 +87,26 @@ class _SearchScrapSourceDialogState extends State<SearchScrapSourceDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 720),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Search Scrap Source',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                const Expanded(
+                  child: Text(
+                    'Search Scrap Source',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
@@ -130,7 +135,7 @@ class _SearchScrapSourceDialogState extends State<SearchScrapSourceDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
+                      horizontal: 16,
                       vertical: 16,
                     ),
                   ),
@@ -232,7 +237,10 @@ class _SearchScrapSourceDialogState extends State<SearchScrapSourceDialog> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -252,7 +260,6 @@ class _SearchScrapSourceDialogState extends State<SearchScrapSourceDialog> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
                         'Ch. $latestChapter',
                         style: const TextStyle(

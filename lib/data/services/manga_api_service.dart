@@ -6,6 +6,9 @@ import '../models/paged_response.dart';
 class MangaApiService {
   final Dio _dio;
 
+  List<String>? _cachedGenres;
+  List<String>? _cachedTypes;
+
   MangaApiService()
     : _dio = Dio(
         BaseOptions(
@@ -70,18 +73,26 @@ class MangaApiService {
   }
 
   Future<List<String>> getAllGenres() async {
+    if (_cachedGenres != null) return _cachedGenres!;
     try {
       final response = await _dio.get('/api/manga/genres');
-      return (response.data as List<dynamic>).map((e) => e.toString()).toList();
+      _cachedGenres = (response.data as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
+      return _cachedGenres!;
     } catch (e) {
       rethrow;
     }
   }
 
   Future<List<String>> getAllTypes() async {
+    if (_cachedTypes != null) return _cachedTypes!;
     try {
       final response = await _dio.get('/api/manga/types');
-      return (response.data as List<dynamic>).map((e) => e.toString()).toList();
+      _cachedTypes = (response.data as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
+      return _cachedTypes!;
     } catch (e) {
       rethrow;
     }

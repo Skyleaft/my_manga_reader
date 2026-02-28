@@ -29,6 +29,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   double _progress = 0.0;
   int _currentPage = 1;
+  TapDownDetails? _doubleTapDetails;
 
   @override
   void initState() {
@@ -145,6 +146,29 @@ class _ReaderScreenState extends State<ReaderScreen> {
     });
   }
 
+  void _handleDoubleTapDown(TapDownDetails details) {
+    _doubleTapDetails = details;
+  }
+
+  void _handleDoubleTap() {
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    if (scale > 1.0) {
+      // Zoom out
+      _transformationController.value = Matrix4.identity();
+    } else if (_doubleTapDetails != null) {
+      // Zoom in
+      final position = _doubleTapDetails!.localPosition;
+      const targetScale = 2.5;
+
+      final x = -position.dx * (targetScale - 1);
+      final y = -position.dy * (targetScale - 1);
+
+      _transformationController.value = Matrix4.identity()
+        ..translate(x, y)
+        ..scale(targetScale);
+    }
+  }
+
   void _onSliderChanged(double value) {
     setState(() {
       _progress = value;
@@ -168,6 +192,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
           Positioned.fill(
             child: GestureDetector(
               onTap: _toggleUI,
+              onDoubleTapDown: _handleDoubleTapDown,
+              onDoubleTap: _handleDoubleTap,
               child: InteractiveViewer(
                 transformationController: _transformationController,
                 minScale: 1.0,

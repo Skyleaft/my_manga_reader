@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="my_manga_reader"
+        android:label="MyKomikID"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
