@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../../data/models/manga_summary.dart';
 
 class MangaCard extends StatelessWidget {
   final String title;
@@ -8,6 +9,10 @@ class MangaCard extends StatelessWidget {
   final int totalChapters;
   final double progress;
   final bool isCompleted;
+  final String? type;
+  final String? status;
+  final List<String>? genres;
+  final VoidCallback? onTap;
 
   const MangaCard({
     super.key,
@@ -17,105 +22,176 @@ class MangaCard extends StatelessWidget {
     required this.totalChapters,
     required this.progress,
     this.isCompleted = false,
+    this.type,
+    this.status,
+    this.genres,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageUrl != null)
-                    Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildPlaceholder(),
-                    )
-                  else
-                    _buildPlaceholder(),
-
-                  // Progress Bar
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 4,
-                      color: Colors.black.withOpacity(0.4),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: progress.clamp(0.0, 1.0),
-                        child: Container(color: AppColors.primary),
-                      ),
-                    ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl != null)
+                      Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildPlaceholder(),
+                      )
+                    else
+                      _buildPlaceholder(),
 
-                  // Completed Badge
-                  if (isCompleted)
+                    // Status Badge
+                    if (status != null && status!.isNotEmpty)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: status?.toLowerCase() == 'ongoing'
+                                ? Colors.green.withOpacity(0.8)
+                                : status?.toLowerCase() == 'completed' ||
+                                      status?.toLowerCase() == 'finished' ||
+                                      status?.toLowerCase() == 'end'
+                                ? Colors.blue.withOpacity(0.8)
+                                : Colors.orange.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            status!.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Type Badge (Manga/Manhwa/Manhua)
                     Positioned(
-                      top: 4,
-                      right: 4,
+                      top: 8,
+                      left: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green,
+                          color: Colors.black.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
-                          'DONE',
-                          style: TextStyle(
+                        child: Text(
+                          type?.toUpperCase() ?? 'MANGA',
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 8,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ),
-                ],
+
+                    // Progress Bar
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 4,
+                        color: Colors.black.withOpacity(0.4),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: progress.clamp(0.0, 1.0),
+                          child: Container(color: AppColors.primary),
+                        ),
+                      ),
+                    ),
+
+                    // Completed Badge
+                    if (isCompleted)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'DONE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            height: 1.2,
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              height: 1.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          'Ch. $currentChapter${totalChapters > 0 ? '/$totalChapters' : ''}',
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.primary.withOpacity(0.8),
-            fontWeight: FontWeight.w500,
+          Text(
+            'Ch. $currentChapter${totalChapters > 0 ? '/$totalChapters' : ''}',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.primary.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+          if (genres != null && genres!.isNotEmpty)
+            Text(
+              genres!.join(', '),
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      ),
     );
   }
 

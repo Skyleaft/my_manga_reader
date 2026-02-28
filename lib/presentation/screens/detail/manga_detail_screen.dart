@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/di/injection.dart';
+import '../../../data/models/library_manga.dart';
 import '../../../data/models/manga_detail.dart';
+import '../../../data/models/progression.dart';
 import '../../../data/models/reader_content.dart';
+import '../../../data/services/library_service.dart';
 import '../../../data/services/manga_api_service.dart';
+import '../../../data/services/progression_service.dart';
 import '../../../routes/app_pages.dart';
 
 class MangaDetailScreen extends StatefulWidget {
@@ -18,8 +22,11 @@ class MangaDetailScreen extends StatefulWidget {
 
 class _MangaDetailScreenState extends State<MangaDetailScreen> {
   final MangaApiService _apiService = getIt<MangaApiService>();
+  final ProgressionService _progressionService = getIt<ProgressionService>();
+  final LibraryService _libraryService = getIt<LibraryService>();
   List<Chapter> _chapters = [];
   bool _isLoadingChapters = true;
+  bool _isInLibrary = false;
 
   MangaDetail get manga => widget.manga;
 
@@ -28,6 +35,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
     super.initState();
     _chapters = widget.manga.chapters;
     _loadChapters();
+    _checkIfInLibrary();
   }
 
   Future<void> _loadChapters() async {
@@ -44,6 +52,51 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
         setState(() {
           _isLoadingChapters = false;
         });
+      }
+    }
+  }
+
+  Future<void> _checkIfInLibrary() async {
+    final isInLibrary = await _libraryService.isInLibrary(manga.id);
+    if (mounted) {
+      setState(() {
+        _isInLibrary = isInLibrary;
+      });
+    }
+  }
+
+  Future<void> _toggleLibrary(BuildContext context) async {
+    try {
+      if (_isInLibrary) {
+        await _libraryService.removeFromLibrary(manga.id);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Removed from library')));
+      } else {
+        final libraryManga = LibraryManga.fromMangaDetail(
+          manga.id,
+          manga.title,
+          manga.author,
+          manga.imageUrl,
+          manga.url,
+          manga.type ?? 'MANGA', // Use manga type or default to MANGA
+        );
+        await _libraryService.addToLibrary(libraryManga);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to library')));
+      }
+
+      if (mounted) {
+        setState(() {
+          _isInLibrary = !_isInLibrary;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -135,6 +188,15 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
       if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
 
+        // Get existing progression for this chapter
+        final progression = await _progressionService.getProgression(manga.id);
+        int startingPage = 1;
+
+        if (progression != null &&
+            progression.currentChapter == chapterNumber) {
+          startingPage = progression.currentPage;
+        }
+
         final content = ReaderContent(
           mangaId: manga.id,
           mangaTitle: manga.title,
@@ -149,6 +211,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
                 ),
               )
               .toList(),
+          currentPage: startingPage,
         );
 
         Navigator.pushNamed(context, AppRoutes.reader, arguments: content);
@@ -391,12 +454,15 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
           height: 56,
           width: 64,
           decoration: BoxDecoration(
-            color: Colors.grey[800],
+            color: _isInLibrary ? AppColors.primary : Colors.grey[800],
             borderRadius: BorderRadius.circular(36),
           ),
           child: IconButton(
-            icon: const Icon(Icons.library_add, color: Colors.white),
-            onPressed: () {},
+            icon: Icon(
+              _isInLibrary ? Icons.library_add_check : Icons.library_add,
+              color: Colors.white,
+            ),
+            onPressed: () => _toggleLibrary(context),
           ),
         ),
       ],
@@ -535,38 +601,44 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
                 : Colors.grey.shade600,
             borderRadius: BorderRadius.circular(36),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    chapter.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppColors.backgroundDark,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        chapter.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.backgroundDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color.fromARGB(255, 189, 189, 189),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color.fromARGB(255, 189, 189, 189),
-                    ),
+                  Row(
+                    children: [
+                      _buildChapterStatus(chapter),
+                      const SizedBox(width: 8),
+                      _buildCompletionBadge(chapter.chapterNumber),
+                    ],
                   ),
                 ],
               ),
-              if (!isAvailable)
-                _buildStatusBadge('SOON', Colors.grey[700]!, Colors.white70)
-              else if (chapter.isNew)
-                _buildStatusBadge('NEW', AppColors.primary, Colors.white)
-              else if (chapter.isRead)
-                _buildStatusBadge('READ', Colors.grey[700]!, Colors.grey[400]!)
-              else
-                const Icon(Icons.chevron_right, color: Colors.grey),
+              const SizedBox(height: 8),
+              _buildProgressionBar(chapter.chapterNumber),
             ],
           ),
         ),
@@ -589,6 +661,137 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
           fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  Widget _buildCompletionBadge(double chapterNumber) {
+    return FutureBuilder<List<MangaProgression>>(
+      future: _progressionService.getAllProgressions(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final progressions = snapshot.data!;
+        final progression = progressions.firstWhereOrNull(
+          (p) => p.mangaId == manga.id && p.currentChapter == chapterNumber,
+        );
+
+        if (progression == null || !progression.isCompleted) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withOpacity(0.9),
+                AppColors.primary.withOpacity(0.6),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.8),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 4,
+                spreadRadius: 1,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                'COMPLETED',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChapterStatus(Chapter chapter) {
+    final bool isAvailable = chapter.isChapterAvailable;
+
+    if (!isAvailable) {
+      return _buildStatusBadge('SOON', Colors.grey[700]!, Colors.white70);
+    } else if (chapter.isNew) {
+      return _buildStatusBadge('NEW', AppColors.primary, Colors.white);
+    } else if (chapter.isRead) {
+      return _buildStatusBadge('READ', Colors.grey[700]!, Colors.grey[400]!);
+    } else {
+      return const Icon(Icons.chevron_right, color: Colors.grey);
+    }
+  }
+
+  Widget _buildProgressionBar(double chapterNumber) {
+    return FutureBuilder<List<MangaProgression>>(
+      future: _progressionService.getAllProgressions(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LinearProgressIndicator(
+            backgroundColor: Colors.white10,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.transparent),
+            minHeight: 4,
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final progressions = snapshot.data!;
+        final progression = progressions.firstWhereOrNull(
+          (p) => p.mangaId == manga.id && p.currentChapter == chapterNumber,
+        );
+
+        if (progression == null || progression.isCompleted) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LinearProgressIndicator(
+              value: progression.progressPercentage,
+              backgroundColor: Colors.white10,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
+              minHeight: 4,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Progress: ${(progression.progressPercentage * 100).toStringAsFixed(1)}%',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

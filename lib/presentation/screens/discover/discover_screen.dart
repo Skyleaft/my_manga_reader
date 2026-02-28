@@ -34,6 +34,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String? _selectedType;
   String? _selectedStatus;
 
+  String _sortBy = 'updatedAt';
+  String _orderBy = 'desc';
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +70,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         genres: _selectedGenres.isEmpty ? null : _selectedGenres,
         type: _selectedType,
         status: _selectedStatus,
+        sortBy: _sortBy,
+        orderBy: _orderBy,
       );
 
       if (!mounted) return;
@@ -145,6 +150,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  void _onSortChanged(String sortBy) {
+    setState(() {
+      _sortBy = sortBy;
+    });
+    _fetchData(refresh: true);
+  }
+
+  void _onOrderToggle() {
+    setState(() {
+      _orderBy = _orderBy == 'asc' ? 'desc' : 'asc';
+    });
+    _fetchData(refresh: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -182,6 +201,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       onShowQueue: _onShowQueue,
                       onSearchScrapSource: _onSearchScrapSource,
                       onFilter: _onFilter,
+                      onSortChanged: _onSortChanged,
+                      onOrderToggle: _onOrderToggle,
+                      currentSortBy: _sortBy,
+                      currentOrderBy: _orderBy,
                       hasFilters:
                           _selectedGenres.isNotEmpty ||
                           _selectedType != null ||

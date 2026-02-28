@@ -27,6 +27,8 @@ class MangaApiService {
     List<String>? genres,
     String? status,
     String? type,
+    String? sortBy,
+    String? orderBy,
     int page = 1,
     int pageSize = 10,
   }) async {
@@ -38,6 +40,8 @@ class MangaApiService {
           if (genres != null && genres.isNotEmpty) 'genres': genres,
           'status': ?status,
           'type': ?type,
+          'sortBy': ?sortBy,
+          'orderBy': ?orderBy,
           'page': page,
           'pageSize': pageSize,
         },

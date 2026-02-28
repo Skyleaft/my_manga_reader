@@ -9,6 +9,10 @@ class DiscoverHeader extends StatelessWidget {
   final VoidCallback onSearchScrapSource;
   final VoidCallback onFilter;
   final bool hasFilters;
+  final Function(String) onSortChanged;
+  final VoidCallback onOrderToggle;
+  final String currentSortBy;
+  final String currentOrderBy;
 
   const DiscoverHeader({
     super.key,
@@ -18,6 +22,10 @@ class DiscoverHeader extends StatelessWidget {
     required this.onShowQueue,
     required this.onSearchScrapSource,
     required this.onFilter,
+    required this.onSortChanged,
+    required this.onOrderToggle,
+    required this.currentSortBy,
+    required this.currentOrderBy,
     this.hasFilters = false,
   });
 
@@ -100,7 +108,8 @@ class DiscoverHeader extends StatelessWidget {
                     isActive: hasFilters,
                   ),
                 ),
-                _buildFilterOption('Sort: Popularity', Icons.sort),
+                _buildSortPicker(),
+                _buildOrderToggle(),
               ],
             ),
           ),
@@ -138,24 +147,58 @@ class DiscoverHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterOption(String label, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildSortPicker() {
+    final sortOptions = {
+      'updatedAt': 'Updated',
+      'title': 'Title',
+      'totalView': 'Popularity',
+      'createdAt': 'Release Date',
+    };
+
+    String label = sortOptions[currentSortBy] ?? 'Sort';
+
+    return PopupMenuButton<String>(
+      onSelected: onSortChanged,
+      itemBuilder: (context) => sortOptions.entries.map((e) {
+        return PopupMenuItem(value: e.key, child: Text(e.value));
+      }).toList(),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              'Sort: $label',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.black54),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(width: 4),
-          Icon(icon, size: 18, color: Colors.black54),
-        ],
+    );
+  }
+
+  Widget _buildOrderToggle() {
+    return GestureDetector(
+      onTap: onOrderToggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          currentOrderBy == 'asc' ? Icons.south : Icons.north,
+          size: 18,
+          color: AppColors.primary,
+        ),
       ),
     );
   }

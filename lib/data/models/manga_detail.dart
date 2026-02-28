@@ -8,6 +8,7 @@ class MangaDetail {
   final List<String> genres;
   final String synopsis;
   final List<Chapter> chapters;
+  final String type;
   final bool isBookmarked;
   final String? url;
 
@@ -21,6 +22,7 @@ class MangaDetail {
     required this.genres,
     required this.synopsis,
     required this.chapters,
+    required this.type,
     this.isBookmarked = false,
     this.url,
   });
@@ -47,6 +49,7 @@ class MangaDetail {
           [],
       isBookmarked: false,
       url: map['url'] as String?,
+      type: map['type'] as String,
     );
   }
 }

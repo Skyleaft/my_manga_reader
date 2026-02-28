@@ -2,8 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/di/injection.dart';
+import '../../../data/models/progression.dart';
 import '../../../data/models/reader_content.dart';
 import '../../../data/services/manga_api_service.dart';
+import '../../../data/services/progression_service.dart';
 
 class ReaderScreen extends StatefulWidget {
   final ReaderContent content;
@@ -16,6 +18,7 @@ class ReaderScreen extends StatefulWidget {
 
 class _ReaderScreenState extends State<ReaderScreen> {
   final MangaApiService _apiService = getIt<MangaApiService>();
+  final ProgressionService _progressionService = getIt<ProgressionService>();
   bool _showUI = true;
   bool _isLoading = false;
   final TransformationController _transformationController =
@@ -37,6 +40,26 @@ class _ReaderScreenState extends State<ReaderScreen> {
     _pageUrls = widget.content.pageUrls;
     _chapterTitle = widget.content.chapterTitle;
     _currentChapterNumber = widget.content.currentChapterNumber;
+
+    // Set initial scroll position based on saved progress
+    if (widget.content.currentPage > 1 &&
+        widget.content.currentPage <= _pageUrls.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scrollController.hasClients) {
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          final targetScroll =
+              ((widget.content.currentPage - 1) / (_pageUrls.length - 1)) *
+              maxScroll;
+          _scrollController.jumpTo(targetScroll);
+
+          // Update progress and page state to match the scroll position
+          setState(() {
+            _progress = (targetScroll / maxScroll).clamp(0.0, 1.0);
+            _currentPage = widget.content.currentPage;
+          });
+        }
+      });
+    }
 
     _transformationController.addListener(_onTransformationChanged);
     _scrollController.addListener(_onScroll);
@@ -70,6 +93,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
           _progress = newProgress;
           _currentPage = newPage;
         });
+
+        // Save progression
+        _saveProgression();
       }
     }
   }
@@ -455,5 +481,29 @@ class _ReaderScreenState extends State<ReaderScreen> {
         onPressed: onTap,
       ),
     );
+  }
+
+  Future<void> _saveProgression() async {
+    final isCompleted = _progress >= 0.99;
+
+    final progression = MangaProgression(
+      mangaId: widget.content.mangaId,
+      currentChapter: _currentChapterNumber,
+      currentPage: _currentPage,
+      totalPages: _pageUrls.length,
+      lastRead: DateTime.now(),
+      isCompleted: isCompleted,
+    );
+
+    try {
+      await _progressionService.saveProgression(progression);
+    } catch (e) {
+      // Silently handle save errors to avoid disrupting reading experience
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save progress: $e')));
+      }
+    }
   }
 }
