@@ -6,6 +6,9 @@ class DiscoverHeader extends StatelessWidget {
   final Function(String) onSearch;
   final VoidCallback onScrapManga;
   final VoidCallback onShowQueue;
+  final VoidCallback onSearchScrapSource;
+  final VoidCallback onFilter;
+  final bool hasFilters;
 
   const DiscoverHeader({
     super.key,
@@ -13,6 +16,9 @@ class DiscoverHeader extends StatelessWidget {
     required this.onSearch,
     required this.onScrapManga,
     required this.onShowQueue,
+    required this.onSearchScrapSource,
+    required this.onFilter,
+    this.hasFilters = false,
   });
 
   @override
@@ -35,6 +41,13 @@ class DiscoverHeader extends StatelessWidget {
               ),
               Row(
                 children: [
+                  IconButton(
+                    onPressed: onSearchScrapSource,
+                    icon: const Icon(
+                      Icons.search_outlined,
+                      color: AppColors.primary,
+                    ),
+                  ),
                   IconButton(
                     onPressed: onScrapManga,
                     icon: const Icon(
@@ -79,24 +92,15 @@ class DiscoverHeader extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterButton(Icons.filter_list, 'Filters'),
-                _buildFilterOption('Type: All', Icons.expand_more),
+                GestureDetector(
+                  onTap: onFilter,
+                  child: _buildFilterButton(
+                    Icons.filter_list,
+                    'Filters',
+                    isActive: hasFilters,
+                  ),
+                ),
                 _buildFilterOption('Sort: Popularity', Icons.sort),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Genre Tags
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildGenreTag('Action', true),
-                _buildGenreTag('Adventure', false),
-                _buildGenreTag('Fantasy', false),
-                _buildGenreTag('Romance', false),
-                _buildGenreTag('Sci-Fi', false),
-                _buildGenreTag('Horror', false),
               ],
             ),
           ),
@@ -105,12 +109,16 @@ class DiscoverHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterButton(IconData icon, String label) {
+  Widget _buildFilterButton(
+    IconData icon,
+    String label, {
+    bool isActive = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: isActive ? AppColors.secondary : AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -148,30 +156,6 @@ class DiscoverHeader extends StatelessWidget {
           const SizedBox(width: 4),
           Icon(icon, size: 18, color: Colors.black54),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGenreTag(String label, bool isActive) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary.withOpacity(0.2) : Colors.grey[100],
-        border: Border.all(
-          color: isActive
-              ? AppColors.primary.withOpacity(0.3)
-              : Colors.transparent,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isActive ? AppColors.primary : Colors.grey[600],
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../home/home_screen.dart';
 import '../library/library_screen.dart';
 import '../discover/discover_screen.dart';
+import '../more/more_screen.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 
 class MainScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(key: ValueKey('home')),
     const LibraryScreen(key: ValueKey('library')),
     const DiscoverScreen(key: ValueKey('discover')),
-    const Center(key: ValueKey('more'), child: Text('More Screen')),
+    const MoreScreen(key: ValueKey('more')),
   ];
 
   @override
@@ -34,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
                   return Stack(
                     children: <Widget>[
                       ...previousChildren,
-                      if (currentChild != null) currentChild,
+                      ?currentChild,
                     ],
                   );
                 },

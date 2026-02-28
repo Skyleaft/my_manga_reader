@@ -10,10 +10,14 @@ class MangaApiService {
     : _dio = Dio(
         BaseOptions(
           baseUrl: AppConfig.baseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
+          connectTimeout: const Duration(seconds: 45),
+          receiveTimeout: const Duration(seconds: 45),
         ),
       );
+
+  void updateBaseUrl(String newUrl) {
+    _dio.options.baseUrl = newUrl;
+  }
 
   Future<PagedResponse<MangaSummary>> getPagedManga({
     String? search,
@@ -27,10 +31,10 @@ class MangaApiService {
       final response = await _dio.get(
         '/api/manga/paged',
         queryParameters: {
-          if (search != null) 'search': search,
+          'search': ?search,
           if (genres != null && genres.isNotEmpty) 'genres': genres,
-          if (status != null) 'status': status,
-          if (type != null) 'type': type,
+          'status': ?status,
+          'type': ?type,
           'page': page,
           'pageSize': pageSize,
         },
@@ -49,6 +53,35 @@ class MangaApiService {
     try {
       final response = await _dio.get('/api/manga/$mangaId');
       return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMangaChapters(String mangaId) async {
+    try {
+      final response = await _dio.get('/api/manga/$mangaId/chapters');
+      return (response.data as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<String>> getAllGenres() async {
+    try {
+      final response = await _dio.get('/api/manga/genres');
+      return (response.data as List<dynamic>).map((e) => e.toString()).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<String>> getAllTypes() async {
+    try {
+      final response = await _dio.get('/api/manga/types');
+      return (response.data as List<dynamic>).map((e) => e.toString()).toList();
     } catch (e) {
       rethrow;
     }
@@ -87,15 +120,37 @@ class MangaApiService {
       return '${AppConfig.baseUrl}$localPath';
     }
 
-    return '${AppConfig.baseUrl}/api/images$localPath';
+    return '${AppConfig.baseUrl}/api/images/$localPath';
   }
 
   Future<void> scrapManga(String mangaUrl, bool scrapChapters) async {
     try {
       await _dio.post(
-        '/api/scrapper/manga',
+        '/api/scrapper/komiku/manga',
         data: {'mangaUrl': mangaUrl, 'scrapChapters': scrapChapters},
       );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> scrapChapterPages(String mangaId) async {
+    try {
+      await _dio.get('/api/scrapper/komiku/manga/$mangaId/chapter-pages');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchScrapSource(String query) async {
+    try {
+      final response = await _dio.get(
+        '/api/scrapper/komiku/manga/search',
+        queryParameters: {'query': query},
+      );
+      return (response.data as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
     } catch (e) {
       rethrow;
     }

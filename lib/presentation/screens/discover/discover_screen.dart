@@ -10,6 +10,8 @@ import '../../../routes/app_pages.dart';
 import 'widgets/discover_header.dart';
 import 'widgets/scrap_manga_dialog.dart';
 import 'widgets/scrap_queue_dialog.dart';
+import 'widgets/search_scrap_source_dialog.dart';
+import 'widgets/filter_dialog.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -27,6 +29,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final int _pageSize = 10;
   bool _hasMore = true;
   String? _searchQuery;
+
+  List<String> _selectedGenres = [];
+  String? _selectedType;
+  String? _selectedStatus;
 
   @override
   void initState() {
@@ -58,6 +64,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         page: _currentPage,
         pageSize: _pageSize,
         search: _searchQuery,
+        genres: _selectedGenres.isEmpty ? null : _selectedGenres,
+        type: _selectedType,
+        status: _selectedStatus,
       );
 
       if (!mounted) return;
@@ -106,6 +115,36 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  void _onSearchScrapSource() {
+    showDialog(
+      context: context,
+      builder: (context) => SearchScrapSourceDialog(
+        onScrapped: () {
+          _fetchData(refresh: true);
+        },
+      ),
+    );
+  }
+
+  void _onFilter() {
+    showDialog(
+      context: context,
+      builder: (context) => FilterDialog(
+        initialGenres: _selectedGenres,
+        initialType: _selectedType,
+        initialStatus: _selectedStatus,
+        onApply: (genres, type, status) {
+          setState(() {
+            _selectedGenres = genres;
+            _selectedType = type;
+            _selectedStatus = status;
+          });
+          _fetchData(refresh: true);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -130,7 +169,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           : AppColors.backgroundLight)
                       .withOpacity(0.8),
               surfaceTintColor: Colors.transparent,
-              expandedHeight: 250,
+              expandedHeight: 196,
               toolbarHeight: 0,
               flexibleSpace: FlexibleSpaceBar(
                 background: ClipRRect(
@@ -141,6 +180,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       onSearch: _onSearch,
                       onScrapManga: _onScrapManga,
                       onShowQueue: _onShowQueue,
+                      onSearchScrapSource: _onSearchScrapSource,
+                      onFilter: _onFilter,
+                      hasFilters:
+                          _selectedGenres.isNotEmpty ||
+                          _selectedType != null ||
+                          _selectedStatus != null,
                     ),
                   ),
                 ),
@@ -175,9 +220,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     return DiscoverCard(
                       title: item.title,
                       type: item.type,
-                      chapter: 0,
+                      latestChapter: item.latestChapter,
                       views: '${(item.totalView / 1000).toStringAsFixed(1)}K',
                       genres: item.genres ?? [],
+                      status: item.status,
                       imageUrl: _apiService.getLocalImageUrl(
                         item.localImageUrl,
                         item.imageUrl,

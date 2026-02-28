@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../../data/models/manga_summary.dart';
 
 class DiscoverCard extends StatelessWidget {
   final String title;
   final String? imageUrl;
   final String type;
-  final int chapter;
   final String views;
+  final LatestChapterSummary? latestChapter;
   final List<String> genres;
+  final String? status;
   final VoidCallback? onTap;
 
   const DiscoverCard({
@@ -15,9 +17,10 @@ class DiscoverCard extends StatelessWidget {
     required this.title,
     this.imageUrl,
     required this.type,
-    required this.chapter,
     required this.views,
+    required this.latestChapter,
     required this.genres,
+    this.status,
     this.onTap,
   });
 
@@ -54,6 +57,38 @@ class DiscoverCard extends StatelessWidget {
                       )
                     else
                       _buildPlaceholder(),
+
+                    // Status Badge
+                    if (status != null && status!.isNotEmpty)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: status?.toLowerCase() == 'ongoing'
+                                ? Colors.green.withOpacity(0.8)
+                                : status?.toLowerCase() == 'completed' ||
+                                      status?.toLowerCase() == 'finished' ||
+                                      status?.toLowerCase() == 'end'
+                                ? Colors.blue.withOpacity(0.8)
+                                : Colors.orange.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            status!.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // Type Badge (Manga/Manhwa/Manhua)
                     Positioned(
@@ -98,7 +133,7 @@ class DiscoverCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'Ch. $chapter',
+                              'Ch. ${latestChapter?.number.toInt() ?? 0}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,

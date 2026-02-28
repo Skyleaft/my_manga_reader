@@ -9,6 +9,7 @@ class MangaSummary {
   final String? localImageUrl;
   final String? status;
   final int totalView;
+  final LatestChapterSummary? latestChapter;
 
   MangaSummary({
     required this.id,
@@ -21,6 +22,7 @@ class MangaSummary {
     this.localImageUrl,
     this.status,
     required this.totalView,
+    this.latestChapter,
   });
 
   factory MangaSummary.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,11 @@ class MangaSummary {
       localImageUrl: json['localImageUrl'] as String?,
       status: json['status'] as String?,
       totalView: json['totalView'] as int? ?? 0,
+      latestChapter: json['latestChapter'] != null
+          ? LatestChapterSummary.fromJson(
+              json['latestChapter'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -47,5 +54,30 @@ class MangaSummary {
       return localImageUrl!;
     }
     return imageUrl ?? '';
+  }
+}
+
+class LatestChapterSummary {
+  final String id;
+  final num number;
+  final int totalView;
+  final DateTime uploadDate;
+
+  LatestChapterSummary({
+    required this.id,
+    required this.number,
+    required this.totalView,
+    required this.uploadDate,
+  });
+
+  factory LatestChapterSummary.fromJson(Map<String, dynamic> json) {
+    return LatestChapterSummary(
+      id: json['id'] as String,
+      number: json['number'] as num? ?? 0,
+      totalView: json['totalView'] as int? ?? 0,
+      uploadDate: json['uploadDate'] != null
+          ? DateTime.parse(json['uploadDate'] as String)
+          : DateTime.now(),
+    );
   }
 }

@@ -20,7 +20,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool _isLoading = false;
   final TransformationController _transformationController =
       TransformationController();
-  final GlobalKey _contentKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
 
   // Local state to allow chapter switching
   late List<String> _pageUrls;
@@ -29,7 +29,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   double _progress = 0.0;
   int _currentPage = 1;
-  double _totalHeight = 0.0;
 
   @override
   void initState() {
@@ -39,47 +38,30 @@ class _ReaderScreenState extends State<ReaderScreen> {
     _currentChapterNumber = widget.content.currentChapterNumber;
 
     _transformationController.addListener(_onTransformationChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateTotalHeight());
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _transformationController.removeListener(_onTransformationChanged);
     _transformationController.dispose();
     super.dispose();
   }
 
-  void _updateTotalHeight() {
-    if (!mounted) return;
-    final box = _contentKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box != null && box.size.height > 0) {
-      setState(() {
-        _totalHeight = box.size.height;
-      });
-    }
+  void _onTransformationChanged() {
+    // Left empty for now, we'll track progress differently
   }
 
-  void _onTransformationChanged() {
-    final box = _contentKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box != null) {
-      final newHeight = box.size.height;
-      if (newHeight != _totalHeight && newHeight > 0) {
-        _totalHeight = newHeight;
-      }
-    }
-
-    if (_totalHeight <= 0) return;
-
-    final translation = _transformationController.value.getTranslation();
-    final scale = _transformationController.value.getMaxScaleOnAxis();
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    final double scrollY = -translation.y;
-    final double totalScaledHeight = _totalHeight * scale;
-    final double maxScroll = totalScaledHeight - screenHeight;
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final maxScroll = position.maxScrollExtent;
+    final currentScroll = position.pixels;
 
     if (maxScroll > 0) {
-      final newProgress = (scrollY / maxScroll).clamp(0.0, 1.0);
+      final newProgress = (currentScroll / maxScroll).clamp(0.0, 1.0);
       final newPage = ((newProgress * (_pageUrls.length - 1)).round() + 1);
 
       if ((newProgress - _progress).abs() > 0.001 || newPage != _currentPage) {
@@ -143,10 +125,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
         _isLoading = false;
         // Reset scroll position
         _transformationController.value = Matrix4.identity();
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
       });
-
-      // Re-measure height
-      WidgetsBinding.instance.addPostFrameCallback((_) => _updateTotalHeight());
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -166,19 +148,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
   void _onSliderChanged(double value) {
     setState(() {
       _progress = value;
-      final scale = _transformationController.value.getMaxScaleOnAxis();
-      final screenHeight = MediaQuery.of(context).size.height;
-      final maxScroll = (_totalHeight * scale) - screenHeight;
-
-      if (maxScroll > 0) {
-        final targetY = -value * maxScroll;
-        final currentX = _transformationController.value.getTranslation().x;
-
-        _transformationController.value = Matrix4.identity()
-          ..translate(currentX, targetY)
-          ..scale(scale);
-      }
     });
+    if (_scrollController.hasClients) {
+      final position = _scrollController.position;
+      final targetScroll = value * position.maxScrollExtent;
+      _scrollController.jumpTo(targetScroll);
+    }
   }
 
   @override
@@ -190,51 +165,58 @@ class _ReaderScreenState extends State<ReaderScreen> {
       body: Stack(
         children: [
           // Content Area
-          GestureDetector(
-            onTap: _toggleUI,
-            child: InteractiveViewer(
-              transformationController: _transformationController,
-              minScale: 1.0,
-              maxScale: 5.0,
-              constrained: false,
-              child: SizedBox(
-                width: screenWidth,
-                child: Column(
-                  key: _contentKey,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isLoading)
-                      Container(
-                        height: MediaQuery.of(context).size.height,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _toggleUI,
+              child: InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 1.0,
+                maxScale: 5.0,
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
                           color: AppColors.primary,
                         ),
                       )
-                    else
-                      ..._pageUrls.map((url) {
-                        return Image.network(
-                          url,
-                          fit: BoxFit.fitWidth,
-                          width: screenWidth,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: 600,
-                              width: screenWidth,
-                              color: Colors.black,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      }).toList(),
-                    const SizedBox(height: 250),
-                  ],
-                ),
+                    : CustomScrollView(
+                        controller: _scrollController,
+                        physics:
+                            const ClampingScrollPhysics(), // Ensures smooth scrolling behavior
+                        slivers: [
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final url = _pageUrls[index];
+                              return Image.network(
+                                url,
+                                fit: BoxFit.fitWidth,
+                                width: screenWidth,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    height:
+                                        screenWidth *
+                                        1.5, // Estimate height for smoother lazy load
+                                    width: screenWidth,
+                                    color: Colors.black,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }, childCount: _pageUrls.length),
+                          ),
+                          // Extra padding element so you can view the bottom
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 250),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -342,7 +324,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildGlassIconButton(Icons.bookmark_outline, () {}),
+                  _buildGlassIconButton(Icons.settings_outlined, () {}),
                 ],
               ),
             ),
@@ -414,7 +396,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'PAGE $_currentPage OF ${_pageUrls.length}  •  ${(_progress * 100).toInt()}%',
@@ -424,21 +406,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
-                    ),
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.settings_outlined,
-                          color: Colors.white60,
-                          size: 16,
-                        ),
-                        SizedBox(width: 16),
-                        Icon(
-                          Icons.auto_awesome_motion_rounded,
-                          color: Colors.white60,
-                          size: 16,
-                        ),
-                      ],
                     ),
                   ],
                 ),

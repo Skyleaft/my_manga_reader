@@ -7,11 +7,46 @@ import '../../../data/models/reader_content.dart';
 import '../../../data/services/manga_api_service.dart';
 import '../../../routes/app_pages.dart';
 
-class MangaDetailScreen extends StatelessWidget {
+class MangaDetailScreen extends StatefulWidget {
   final MangaDetail manga;
-  final MangaApiService _apiService = getIt<MangaApiService>();
 
-  MangaDetailScreen({super.key, required this.manga});
+  const MangaDetailScreen({super.key, required this.manga});
+
+  @override
+  State<MangaDetailScreen> createState() => _MangaDetailScreenState();
+}
+
+class _MangaDetailScreenState extends State<MangaDetailScreen> {
+  final MangaApiService _apiService = getIt<MangaApiService>();
+  List<Chapter> _chapters = [];
+  bool _isLoadingChapters = true;
+
+  MangaDetail get manga => widget.manga;
+
+  @override
+  void initState() {
+    super.initState();
+    _chapters = widget.manga.chapters;
+    _loadChapters();
+  }
+
+  Future<void> _loadChapters() async {
+    try {
+      final chaptersData = await _apiService.getMangaChapters(manga.id);
+      if (mounted) {
+        setState(() {
+          _chapters = chaptersData.map((e) => Chapter.fromMap(e)).toList();
+          _isLoadingChapters = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingChapters = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,42 +59,53 @@ class MangaDetailScreen extends StatelessWidget {
           _buildHeroSection(context),
 
           // Scrollable Content
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 300), // Offset for hero
-                Container(
-                  width: double.infinity,
+          CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 300), // Offset for hero
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.backgroundLight,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildMainInfo(isDark),
+                          const SizedBox(height: 16),
+                          _buildGenreTags(),
+                          const SizedBox(height: 24),
+                          _buildSynopsis(),
+                          const SizedBox(height: 24),
+                          _buildActionButtons(context),
+                          const SizedBox(height: 32),
+                          _buildChapterListHeader(context),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildChapterListSliver(context, isDark),
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 48,
                   decoration: BoxDecoration(
                     color: isDark
                         ? AppColors.backgroundDark
                         : AppColors.backgroundLight,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 24,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildMainInfo(isDark),
-                      const SizedBox(height: 16),
-                      _buildGenreTags(),
-                      const SizedBox(height: 24),
-                      _buildSynopsis(),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(context),
-                      const SizedBox(height: 32),
-                      _buildChapterList(context, isDark),
-                      const SizedBox(height: 48), // Bottom padding
-                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
 
           // Top Navigation Bar
@@ -93,7 +139,7 @@ class MangaDetailScreen extends StatelessWidget {
           mangaId: manga.id,
           mangaTitle: manga.title,
           currentChapterNumber: chapterNumber,
-          allChapters: manga.chapters,
+          allChapters: _chapters,
           chapterTitle: chapterTitle,
           pageUrls: pages
               .map(
@@ -305,22 +351,26 @@ class MangaDetailScreen extends StatelessWidget {
         Expanded(
           flex: 4,
           child: ElevatedButton.icon(
-            onPressed: () {
-              final availableChapters = manga.chapters
-                  .where((c) => c.isChapterAvailable)
-                  .toList();
-              if (availableChapters.isNotEmpty) {
-                // Assuming last is first chapter (earliest)
-                final firstAvailable = availableChapters.last;
-                _navigateToReader(
-                  context,
-                  firstAvailable.chapterNumber,
-                  firstAvailable.title,
-                );
-              }
-            },
+            onPressed: _isLoadingChapters
+                ? null
+                : () {
+                    final availableChapters = _chapters
+                        .where((c) => c.isChapterAvailable)
+                        .toList();
+                    if (availableChapters.isNotEmpty) {
+                      // Assuming last is first chapter (earliest)
+                      final firstAvailable = availableChapters.last;
+                      _navigateToReader(
+                        context,
+                        firstAvailable.chapterNumber,
+                        firstAvailable.title,
+                      );
+                    }
+                  },
             style: ElevatedButton.styleFrom(
-              backgroundColor: manga.chapters.any((c) => c.isChapterAvailable)
+              backgroundColor: _isLoadingChapters
+                  ? Colors.grey[700]
+                  : _chapters.any((c) => c.isChapterAvailable)
                   ? AppColors.primary
                   : Colors.grey[700],
               foregroundColor: Colors.white,
@@ -353,19 +403,47 @@ class MangaDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChapterList(BuildContext context, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildChapterListHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        const Text(
+          'Chapters',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Chapters',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            IconButton(
+              onPressed: () async {
+                try {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Scraping chapters...')),
+                  );
+                  await _apiService.scrapChapterPages(manga.id);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Chapter scraping queued successfully!'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to scrap chapters: $e')),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(
+                Icons.cloud_download_outlined,
                 color: AppColors.primary,
+                size: 20,
               ),
             ),
             TextButton.icon(
@@ -386,18 +464,51 @@ class MangaDetailScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: manga.chapters.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final chapter = manga.chapters[index];
-            return _buildChapterItem(context, chapter, isDark);
-          },
-        ),
       ],
+    );
+  }
+
+  Widget _buildChapterListSliver(BuildContext context, bool isDark) {
+    final bgColor = isDark
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+
+    if (_isLoadingChapters) {
+      return SliverToBoxAdapter(
+        child: Container(
+          color: bgColor,
+          padding: const EdgeInsets.all(24.0),
+          child: const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+      );
+    }
+
+    if (_chapters.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          color: bgColor,
+          padding: const EdgeInsets.all(24.0),
+          child: const Center(
+            child: Text(
+              'No chapters available',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final chapter = _chapters[index];
+        return Container(
+          color: bgColor,
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          child: _buildChapterItem(context, chapter, isDark),
+        );
+      }, childCount: _chapters.length),
     );
   }
 
@@ -411,11 +522,17 @@ class MangaDetailScreen extends StatelessWidget {
           : null,
       borderRadius: BorderRadius.circular(36),
       child: Opacity(
-        opacity: isAvailable ? 1.0 : 0.5,
+        opacity: isAvailable ? 1.0 : 0.6,
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.grey[800]!.withValues(alpha: 0.7),
+            color: isAvailable
+                ? AppColors.backgroundLight.withValues(
+                    blue: 20,
+                    red: 15,
+                    green: 15,
+                  )
+                : Colors.grey.shade600,
             borderRadius: BorderRadius.circular(36),
           ),
           child: Row(
@@ -429,7 +546,7 @@ class MangaDetailScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Colors.white,
+                      color: AppColors.backgroundDark,
                     ),
                   ),
                   const SizedBox(height: 4),
