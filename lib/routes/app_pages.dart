@@ -3,6 +3,7 @@ import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/main/main_screen.dart';
 import '../presentation/screens/detail/manga_detail_screen.dart';
 import '../presentation/screens/reader/reader_screen.dart';
+import '../presentation/screens/history/history_screen.dart';
 import '../data/models/manga_detail.dart';
 import '../data/models/reader_content.dart';
 
@@ -11,6 +12,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String detail = '/detail';
   static const String reader = '/reader';
+  static const String history = '/history';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (context) => const LoginScreen(),
@@ -24,5 +26,6 @@ class AppRoutes {
           ModalRoute.of(context)!.settings.arguments as ReaderContent;
       return ReaderScreen(content: content);
     },
+    history: (context) => const HistoryScreen(),
   };
 }

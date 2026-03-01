@@ -98,8 +98,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.settings_outlined),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.history);
+                },
+                icon: const Icon(Icons.history_outlined),
                 color: isDark ? Colors.white70 : Colors.black87,
               ),
             ],

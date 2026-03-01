@@ -8,33 +8,59 @@ extension ListExtensions<T> on List<T> {
     }
     return null;
   }
+
+  T? lastWhereOrNull(bool Function(T element) test) {
+    for (int i = this.length - 1; i >= 0; i--) {
+      if (test(this[i])) return this[i];
+    }
+    return null;
+  }
 }
 
 class ProgressionService {
   static const _progressionKey = 'manga_progression';
 
   Future<void> saveProgression(MangaProgression progression) async {
-    final prefs = await SharedPreferences.getInstance();
-    final progressions = await getAllProgressions();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progressions = await getAllProgressions();
 
-    // Find existing progression for this manga and chapter
-    final existingIndex = progressions.indexWhere(
-      (p) =>
-          p.mangaId == progression.mangaId &&
-          p.currentChapter == progression.currentChapter,
-    );
+      // Find existing progression for this manga and chapter
+      final existingIndex = progressions.indexWhere(
+        (p) =>
+            p.mangaId == progression.mangaId &&
+            p.currentChapter == progression.currentChapter,
+      );
 
-    if (existingIndex >= 0) {
-      // Update existing progression for this chapter
-      progressions[existingIndex] = progression;
-    } else {
-      // New progression
-      progressions.add(progression);
+      if (existingIndex >= 0) {
+        // Update existing progression for this chapter
+        progressions[existingIndex] = progression;
+      } else {
+        // Check if there's any existing progression for this manga
+        final mangaIndex = progressions.indexWhere(
+          (p) => p.mangaId == progression.mangaId,
+        );
+
+        if (mangaIndex >= 0) {
+          // Update the existing manga progression (replace with new chapter)
+          progressions[mangaIndex] = progression;
+        } else {
+          // New progression for this manga
+          progressions.add(progression);
+        }
+      }
+
+      // Save back to preferences
+      final jsonList = progressions.map((p) => p.toJson()).toList();
+      final success = await prefs.setStringList(_progressionKey, jsonList);
+
+      if (!success) {
+        throw Exception('Failed to save progression to SharedPreferences');
+      }
+    } catch (e) {
+      // Re-throw the error so it can be handled by the caller
+      throw Exception('Error saving progression: $e');
     }
-
-    // Save back to preferences
-    final jsonList = progressions.map((p) => p.toJson()).toList();
-    await prefs.setStringList(_progressionKey, jsonList);
   }
 
   Future<MangaProgression?> getProgression(String mangaId) async {

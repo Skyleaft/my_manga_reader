@@ -498,12 +498,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
     try {
       await _progressionService.saveProgression(progression);
     } catch (e) {
-      // Silently handle save errors to avoid disrupting reading experience
+      // Show error message to help debug the issue
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save progress: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save progress: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
+      // Log the error for debugging
+      debugPrint('Progression save error: $e');
     }
   }
 }

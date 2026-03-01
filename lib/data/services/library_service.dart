@@ -1,7 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/library_manga.dart';
 import 'progression_service.dart';
-import 'dart:convert';
 
 class LibraryService {
   static const _libraryKey = 'manga_library';

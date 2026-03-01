@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../../data/models/manga_summary.dart';
 
 class MangaCard extends StatelessWidget {
   final String title;

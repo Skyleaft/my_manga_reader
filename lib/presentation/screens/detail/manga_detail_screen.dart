@@ -409,6 +409,34 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    return FutureBuilder<List<MangaProgression>>(
+      future: _progressionService.getAllProgressions(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return _buildDefaultActionButtons(context);
+        }
+
+        final progressions = snapshot.data!;
+        final currentProgression = progressions.firstWhereOrNull(
+          (p) => p.mangaId == manga.id,
+        );
+
+        if (currentProgression != null) {
+          return _buildResumeActionButtons(context, currentProgression);
+        } else {
+          return _buildDefaultActionButtons(context);
+        }
+      },
+    );
+  }
+
+  Widget _buildDefaultActionButtons(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -446,6 +474,103 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
             label: const Text(
               'Read First Chapter',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          height: 56,
+          width: 64,
+          decoration: BoxDecoration(
+            color: _isInLibrary ? AppColors.primary : Colors.grey[800],
+            borderRadius: BorderRadius.circular(36),
+          ),
+          child: IconButton(
+            icon: Icon(
+              _isInLibrary ? Icons.library_add_check : Icons.library_add,
+              color: Colors.white,
+            ),
+            onPressed: () => _toggleLibrary(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResumeActionButtons(
+    BuildContext context,
+    MangaProgression progression,
+  ) {
+    // Find the exact chapter that matches the progression
+    final exactChapter = _chapters.firstWhereOrNull(
+      (c) =>
+          c.isChapterAvailable && c.chapterNumber == progression.currentChapter,
+    );
+
+    // Find the next available chapter after the current progression
+    final nextChapter = _chapters.firstWhereOrNull(
+      (c) =>
+          c.isChapterAvailable && c.chapterNumber > progression.currentChapter,
+    );
+
+    // Find the previous available chapter before the current progression
+    final prevChapter = _chapters.lastWhereOrNull(
+      (c) =>
+          c.isChapterAvailable && c.chapterNumber < progression.currentChapter,
+    );
+
+    // Determine the actual target chapter and button text
+    // Priority: 1) Exact match, 2) Next chapter, 3) Previous chapter, 4) First available
+    final targetChapter =
+        exactChapter ??
+        nextChapter ??
+        prevChapter ??
+        _chapters.firstWhereOrNull((c) => c.isChapterAvailable);
+
+    final buttonText = targetChapter != null
+        ? 'Resume Chapter ${targetChapter.chapterNumber.toInt()}'
+        : 'Resume Chapter ${progression.currentChapter.toInt()}';
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 4,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (targetChapter != null) {
+                _navigateToReader(
+                  context,
+                  targetChapter.chapterNumber,
+                  targetChapter.title,
+                );
+              } else {
+                // Fallback to first available chapter
+                final availableChapters = _chapters
+                    .where((c) => c.isChapterAvailable)
+                    .toList();
+
+                if (availableChapters.isNotEmpty) {
+                  final firstAvailable = availableChapters.last;
+                  _navigateToReader(
+                    context,
+                    firstAvailable.chapterNumber,
+                    firstAvailable.title,
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(36),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow),
+            label: Text(
+              buttonText,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ),
@@ -580,6 +705,12 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
 
   Widget _buildChapterItem(BuildContext context, Chapter chapter, bool isDark) {
     final bool isAvailable = chapter.isChapterAvailable;
+    final Color chapterBgColor = isAvailable
+        ? isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.05)
+        : Colors.grey.shade600;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
 
     return InkWell(
       onTap: isAvailable
@@ -592,13 +723,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
-            color: isAvailable
-                ? AppColors.backgroundLight.withValues(
-                    blue: 20,
-                    red: 15,
-                    green: 15,
-                  )
-                : Colors.grey.shade600,
+            color: chapterBgColor,
             borderRadius: BorderRadius.circular(36),
           ),
           child: Column(
@@ -612,18 +737,18 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
                     children: [
                       Text(
                         chapter.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.backgroundDark,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 189, 189, 189),
+                          color: textColor.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -677,11 +802,27 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
         }
 
         final progressions = snapshot.data!;
-        final progression = progressions.firstWhereOrNull(
-          (p) => p.mangaId == manga.id && p.currentChapter == chapterNumber,
-        );
 
-        if (progression == null || !progression.isCompleted) {
+        // Check if this chapter has been completed by looking for:
+        // 1. A progression for this exact chapter that is completed
+        // 2. A progression for a later chapter (meaning this chapter was completed)
+        final hasCompletedThisChapter = progressions.any((p) {
+          if (p.mangaId != manga.id) return false;
+
+          // Case 1: Exact match and completed
+          if (p.currentChapter == chapterNumber && p.isCompleted) {
+            return true;
+          }
+
+          // Case 2: Later chapter progression means this chapter was completed
+          if (p.currentChapter > chapterNumber) {
+            return true;
+          }
+
+          return false;
+        });
+
+        if (!hasCompletedThisChapter) {
           return const SizedBox.shrink();
         }
 
