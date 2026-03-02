@@ -14,7 +14,9 @@ class AppTheme {
         surface: Colors.white,
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.light().textTheme,
+      ).apply(bodyColor: Colors.black, displayColor: Colors.black),
     );
   }
 
@@ -29,7 +31,9 @@ class AppTheme {
         surface: AppColors.slate800,
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.dark().textTheme,
+      ).apply(bodyColor: Colors.white, displayColor: Colors.white),
     );
   }
 }

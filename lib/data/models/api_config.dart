@@ -62,26 +62,6 @@ class ApiConfigManager {
     final prefs = await SharedPreferences.getInstance();
     final jsonList = prefs.getStringList(_prefsKey) ?? [];
 
-    // Add default APIs if no configs exist
-    if (jsonList.isEmpty) {
-      final defaultConfigs = [
-        ApiConfig(
-          id: 'mangadex',
-          name: 'MangaDex API',
-          baseUrl: 'https://api.mangadex.org',
-          isDefault: true,
-        ),
-        ApiConfig(
-          id: 'myanimelist',
-          name: 'MyAnimeList API',
-          baseUrl: 'https://api.myanimelist.net',
-          isDefault: true,
-        ),
-      ];
-      await saveApiConfigs(defaultConfigs);
-      return defaultConfigs;
-    }
-
     return jsonList.map((jsonString) {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       return ApiConfig.fromJson(json);

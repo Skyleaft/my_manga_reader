@@ -1,10 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:my_manga_reader/data/services/auth_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../routes/app_pages.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = await _authService.signInWithGoogle();
+      if (user != null) {
+        // Navigate to home screen
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to sign in with Google'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +122,9 @@ class LoginScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                         children: [
-                          const TextSpan(text: "Manga"),
+                          const TextSpan(text: "My"),
                           TextSpan(
-                            text: "Verse",
+                            text: "KomikID",
                             style: TextStyle(color: AppColors.primary),
                           ),
                         ],
@@ -116,10 +165,8 @@ class LoginScreen extends StatelessWidget {
                   _buildButton(
                     context: context,
                     icon: const FaIcon(FontAwesomeIcons.google),
-                    label: "Sign In with Google",
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, AppRoutes.home);
-                    },
+                    label: _isLoading ? "Signing in..." : "Sign In with Google",
+                    onPressed: _isLoading ? null : _handleGoogleSignIn,
                     backgroundColor: isDark ? AppColors.slate800 : Colors.white,
                     textColor: isDark ? Colors.white : AppColors.slate800,
                   ),
@@ -167,7 +214,7 @@ class LoginScreen extends StatelessWidget {
     required BuildContext context,
     required Widget icon,
     required String label,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required Color backgroundColor,
     required Color textColor,
     bool hasShadow = false,

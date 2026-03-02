@@ -12,9 +12,12 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
   int _previousIndex = 0;
+  late AnimationController _animationController;
+  Animation<Offset>? _slideAnimation;
+  Animation<double>? _fadeAnimation;
 
   final List<Widget> _screens = [
     const HomeScreen(key: ValueKey('home')),
@@ -24,72 +27,108 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _navigateTo(int index) {
+    if (index != _currentIndex) {
+      final isMovingForward = index > _currentIndex;
+
+      // Set up slide animation
+      _slideAnimation =
+          Tween<Offset>(
+            begin: isMovingForward ? const Offset(1, 0) : const Offset(-1, 0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Curves.easeInOut,
+            ),
+          );
+
+      // Set up fade animation for the new screen
+      _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      );
+
+      _animationController.reset();
+      _animationController.forward();
+
+      setState(() {
+        _previousIndex = _currentIndex;
+        _currentIndex = index;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            layoutBuilder:
-                (Widget? currentChild, List<Widget> previousChildren) {
-                  return Stack(
-                    children: <Widget>[
-                      ...previousChildren,
-                      ?currentChild,
-                    ],
-                  );
-                },
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              final isEntering = child.key == _screens[_currentIndex].key;
-              final isMovingForward = _currentIndex > _previousIndex;
+          // Previous screen (sliding out)
+          if (_previousIndex != _currentIndex)
+            SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: Offset.zero,
+                    end: _currentIndex > _previousIndex
+                        ? const Offset(-1, 0)
+                        : const Offset(1, 0),
+                  ).animate(
+                    CurvedAnimation(
+                      parent: _animationController,
+                      curve: const Interval(0.0, 0.7, curve: Curves.easeInOut),
+                    ),
+                  ),
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: const Interval(0.0, 0.7, curve: Curves.easeInOut),
+                  ),
+                ),
+                child: _screens[_previousIndex],
+              ),
+            ),
 
-              Offset beginOffset;
-              Offset endOffset;
-
-              if (isEntering) {
-                // The new screen entering
-                beginOffset = isMovingForward
-                    ? const Offset(1, 0)
-                    : const Offset(-1, 0);
-                endOffset = Offset.zero;
-              } else {
-                // The old screen exiting
-                beginOffset = isMovingForward
-                    ? const Offset(-1, 0)
-                    : const Offset(1, 0);
-                endOffset = Offset.zero;
-              }
-
-              // Use a CurvedAnimation for smoother motion
-              final curvedAnimation = CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              );
-
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: beginOffset,
-                  end: endOffset,
-                ).animate(curvedAnimation),
-                child: FadeTransition(opacity: curvedAnimation, child: child),
-              );
-            },
-            child: _screens[_currentIndex],
+          // Current screen (sliding in)
+          SlideTransition(
+            position:
+                _slideAnimation ??
+                Tween<Offset>(
+                  begin: Offset.zero,
+                  end: Offset.zero,
+                ).animate(_animationController),
+            child: FadeTransition(
+              opacity:
+                  _fadeAnimation ??
+                  Tween<double>(
+                    begin: 1.0,
+                    end: 1.0,
+                  ).animate(_animationController),
+              child: _screens[_currentIndex],
+            ),
           ),
+
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: AppBottomNav(
               currentIndex: _currentIndex,
-              onTap: (index) {
-                if (index != _currentIndex) {
-                  setState(() {
-                    _previousIndex = _currentIndex;
-                    _currentIndex = index;
-                  });
-                }
-              },
+              onTap: _navigateTo,
             ),
           ),
         ],

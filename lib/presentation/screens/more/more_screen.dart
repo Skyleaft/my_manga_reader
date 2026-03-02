@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../data/services/auth_service.dart';
 import 'base_api_setting_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -8,6 +11,7 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authService = Provider.of<AuthService>(context);
 
     return Scaffold(
       backgroundColor: isDark
@@ -19,7 +23,7 @@ class MoreScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(isDark),
+              _buildHeader(isDark, authService.currentUser),
               const SizedBox(height: 32),
 
               _buildCategoryTitle('Settings'),
@@ -147,7 +151,7 @@ class MoreScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 32),
-              _buildFooter(),
+              _buildFooter(context),
             ],
           ),
         ),
@@ -155,7 +159,7 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, User? user) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -173,23 +177,31 @@ class MoreScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 32,
             backgroundColor: AppColors.primary,
-            child: Icon(Icons.person, size: 32, color: Colors.white),
+            backgroundImage: user?.photoURL != null
+                ? NetworkImage(user!.photoURL!)
+                : null,
+            child: user?.photoURL == null
+                ? const Icon(Icons.person, size: 32, color: Colors.white)
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Username',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  user?.displayName ?? 'Username',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'email@example.com',
+                  user?.email ?? 'email@example.com',
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
               ],
@@ -270,13 +282,23 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              try {
+                await authService.signOut();
+                // Navigate to login screen
+                Navigator.pushReplacementNamed(context, '/login');
+              } catch (e) {
+                // Handle error
+                print('Logout error: $e');
+              }
+            },
             icon: const Icon(Icons.logout),
             label: const Text(
               'Logout',

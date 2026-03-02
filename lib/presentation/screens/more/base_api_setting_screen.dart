@@ -94,6 +94,8 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('API Configuration Saved')),
         );
+        // Close the screen after saving
+        Navigator.pop(context);
       }
     }
   }
@@ -115,14 +117,22 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
             onPressed: () {
               _saveSettings();
             },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             child: const Text(
               'Save',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
@@ -156,28 +166,47 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                   _buildSectionTitle('Add Custom API'),
                   InkWell(
                     onTap: () => _showConfigureDialog(),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.5),
-                          style: BorderStyle.solid,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary.withOpacity(0.15),
+                            AppColors.primary.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        color: AppColors.primary.withOpacity(0.05),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.6),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add, color: AppColors.primary),
-                          SizedBox(width: 8),
+                          Icon(
+                            Icons.add_circle,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
                           Text(
                             'Add New API Endpoint',
                             style: TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                         ],
@@ -236,13 +265,27 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.2),
+            AppColors.primary.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: AppColors.primary),
+          Icon(Icons.check_circle, color: AppColors.primary, size: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -254,24 +297,24 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                       config.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 18,
                       ),
                     ),
                     if (config.isDefault) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
+                          color: AppColors.primary.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'Default',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
@@ -280,10 +323,11 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   config.baseUrl,
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -292,6 +336,15 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
             children: [
               TextButton(
                 onPressed: () => _showConfigureDialog(existingConfig: config),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Text(
                   'Edit',
                   style: TextStyle(
@@ -303,6 +356,15 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
               if (!config.isDefault)
                 TextButton(
                   onPressed: () => _deleteApi(config),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: const Text(
                     'Delete',
                     style: TextStyle(
@@ -372,7 +434,7 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActive
                 ? AppColors.primary
@@ -383,9 +445,9 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
               ? []
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
         ),
@@ -396,6 +458,7 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
               color: isActive ? AppColors.primary : Colors.grey,
+              size: 24,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -434,10 +497,11 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     config.baseUrl,
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -446,6 +510,15 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
               children: [
                 TextButton(
                   onPressed: onEdit,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
                   child: const Text(
                     'Edit',
                     style: TextStyle(
@@ -457,6 +530,15 @@ class _BaseApiSettingScreenState extends State<BaseApiSettingScreen> {
                 if (onDelete != null)
                   TextButton(
                     onPressed: onDelete,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
                     child: const Text(
                       'Delete',
                       style: TextStyle(

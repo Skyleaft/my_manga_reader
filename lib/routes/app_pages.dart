@@ -4,6 +4,7 @@ import '../presentation/screens/main/main_screen.dart';
 import '../presentation/screens/detail/manga_detail_screen.dart';
 import '../presentation/screens/reader/reader_screen.dart';
 import '../presentation/screens/history/history_screen.dart';
+import '../presentation/screens/more/base_api_setting_screen.dart';
 import '../data/models/manga_detail.dart';
 import '../data/models/reader_content.dart';
 
@@ -13,6 +14,7 @@ class AppRoutes {
   static const String detail = '/detail';
   static const String reader = '/reader';
   static const String history = '/history';
+  static const String baseApiSetting = '/base_api_setting';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (context) => const LoginScreen(),
@@ -27,5 +29,6 @@ class AppRoutes {
       return ReaderScreen(content: content);
     },
     history: (context) => const HistoryScreen(),
+    baseApiSetting: (context) => const BaseApiSettingScreen(),
   };
 }

@@ -50,42 +50,61 @@ class AppBottomNav extends StatelessWidget {
     final isActive = currentIndex == index;
 
     return Expanded(
-      child: GestureDetector(
-        onTap: () => onTap(index),
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppColors.primary.withValues(alpha: 0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    icon,
-                    key: ValueKey('nav_icon_${index}_$isActive'),
-                    color: isActive ? AppColors.primary : AppColors.secondary,
-                    size: isActive ? 26 : 24,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => onTap(index),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    width: isActive ? 40 : 36,
+                    height: isActive ? 40 : 36,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        icon,
+                        color: isActive
+                            ? AppColors.primary
+                            : AppColors.secondary,
+                        size: isActive ? 26 : 24,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isActive ? AppColors.primary : Colors.grey,
-                    fontSize: 10,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  const SizedBox(height: 2),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    style: TextStyle(
+                      color: isActive ? AppColors.primary : Colors.grey,
+                      fontSize: 10,
+                      fontWeight: isActive
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                    child: Text(label),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
