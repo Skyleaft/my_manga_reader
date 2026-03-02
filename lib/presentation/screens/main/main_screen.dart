@@ -74,6 +74,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1024;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -122,15 +125,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNav(
-              currentIndex: _currentIndex,
-              onTap: _navigateTo,
+          // Bottom navigation
+          if (isDesktop)
+            // Desktop: Center the bottom nav
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  width: 600, // Fixed width for desktop
+                  child: AppBottomNav(
+                    currentIndex: _currentIndex,
+                    onTap: _navigateTo,
+                  ),
+                ),
+              ),
+            )
+          else
+            // Mobile/Tablet: Full width
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AppBottomNav(
+                currentIndex: _currentIndex,
+                onTap: _navigateTo,
+              ),
             ),
-          ),
         ],
       ),
     );

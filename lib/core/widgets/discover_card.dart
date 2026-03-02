@@ -26,6 +26,95 @@ class DiscoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 768;
+    final isDesktop = screenWidth >= 1024;
+
+    // Responsive dimensions
+    final double borderRadius = isDesktop
+        ? 16
+        : isTablet
+        ? 14
+        : 12;
+
+    final EdgeInsetsGeometry padding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+        : isTablet
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+        : const EdgeInsets.symmetric(horizontal: 8, vertical: 8);
+
+    final double titleFontSize = isDesktop
+        ? 16
+        : isTablet
+        ? 15
+        : 14;
+
+    final double genreFontSize = isDesktop
+        ? 11
+        : isTablet
+        ? 10.5
+        : 10;
+
+    final double statusFontSize = isDesktop
+        ? 10
+        : isTablet
+        ? 9.5
+        : 9;
+
+    final double typeFontSize = isDesktop
+        ? 11
+        : isTablet
+        ? 10.5
+        : 10;
+
+    final double chapterFontSize = isDesktop
+        ? 11
+        : isTablet
+        ? 10.5
+        : 10;
+
+    final double viewsFontSize = isDesktop
+        ? 11
+        : isTablet
+        ? 10.5
+        : 10;
+
+    final double iconSize = isDesktop
+        ? 14
+        : isTablet
+        ? 13
+        : 12;
+
+    final EdgeInsetsGeometry statusPadding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4)
+        : isTablet
+        ? const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5)
+        : const EdgeInsets.symmetric(horizontal: 6, vertical: 3);
+
+    final EdgeInsetsGeometry typePadding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 5)
+        : isTablet
+        ? const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5)
+        : const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
+
+    final EdgeInsetsGeometry chapterPadding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 3)
+        : isTablet
+        ? const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5)
+        : const EdgeInsets.symmetric(horizontal: 8, vertical: 2);
+
+    final EdgeInsetsGeometry viewsPadding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 3)
+        : isTablet
+        ? const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5)
+        : const EdgeInsets.symmetric(horizontal: 8, vertical: 2);
+
+    final double placeholderIconSize = isDesktop
+        ? 40
+        : isTablet
+        ? 36
+        : 32;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -34,17 +123,21 @@ class DiscoverCard extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(borderRadius),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    blurRadius: isDesktop
+                        ? 12
+                        : isTablet
+                        ? 11
+                        : 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(borderRadius),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -53,21 +146,26 @@ class DiscoverCard extends StatelessWidget {
                         imageUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
-                            _buildPlaceholder(),
+                            _buildPlaceholder(placeholderIconSize),
                       )
                     else
-                      _buildPlaceholder(),
+                      _buildPlaceholder(placeholderIconSize),
 
                     // Status Badge
                     if (status != null && status!.isNotEmpty)
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        top: isDesktop
+                            ? 12
+                            : isTablet
+                            ? 10
+                            : 8,
+                        right: isDesktop
+                            ? 12
+                            : isTablet
+                            ? 10
+                            : 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
+                          padding: statusPadding,
                           decoration: BoxDecoration(
                             color: status?.toLowerCase() == 'ongoing'
                                 ? Colors.green.withOpacity(0.8)
@@ -80,9 +178,9 @@ class DiscoverCard extends StatelessWidget {
                           ),
                           child: Text(
                             status!.toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 9,
+                              fontSize: statusFontSize,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                             ),
@@ -92,22 +190,27 @@ class DiscoverCard extends StatelessWidget {
 
                     // Type Badge (Manga/Manhwa/Manhua)
                     Positioned(
-                      top: 8,
-                      left: 8,
+                      top: isDesktop
+                          ? 12
+                          : isTablet
+                          ? 10
+                          : 8,
+                      left: isDesktop
+                          ? 12
+                          : isTablet
+                          ? 10
+                          : 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+                        padding: typePadding,
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           type.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: typeFontSize,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
@@ -117,35 +220,41 @@ class DiscoverCard extends StatelessWidget {
 
                     // Bottom Badges
                     Positioned(
-                      bottom: 8,
-                      left: 8,
-                      right: 8,
+                      bottom: isDesktop
+                          ? 12
+                          : isTablet
+                          ? 10
+                          : 8,
+                      left: isDesktop
+                          ? 12
+                          : isTablet
+                          ? 10
+                          : 8,
+                      right: isDesktop
+                          ? 12
+                          : isTablet
+                          ? 10
+                          : 8,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
+                            padding: chapterPadding,
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Ch. ${latestChapter?.number.toInt() ?? 0}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 10,
+                                fontSize: chapterFontSize,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
+                            padding: viewsPadding,
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(4),
@@ -153,17 +262,17 @@ class DiscoverCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.visibility_outlined,
                                   color: Colors.white,
-                                  size: 12,
+                                  size: iconSize,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   views,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 10,
+                                    fontSize: viewsFontSize,
                                   ),
                                 ),
                               ],
@@ -180,13 +289,16 @@ class DiscoverCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: titleFontSize,
+              fontWeight: FontWeight.bold,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             genres.join(', '),
-            style: const TextStyle(fontSize: 10, color: Colors.grey),
+            style: TextStyle(fontSize: genreFontSize, color: Colors.grey),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -195,14 +307,14 @@ class DiscoverCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(double iconSize) {
     return Container(
       color: AppColors.primary.withOpacity(0.1),
       child: Center(
         child: Icon(
           Icons.image_outlined,
           color: AppColors.primary.withOpacity(0.5),
-          size: 32,
+          size: iconSize,
         ),
       ),
     );

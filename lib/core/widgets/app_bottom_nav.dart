@@ -15,12 +15,35 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 768;
+    final isDesktop = screenWidth >= 1024;
+
+    // Responsive padding and height
+    final EdgeInsetsGeometry margin = isDesktop
+        ? const EdgeInsets.only(left: 48, right: 48, bottom: 32)
+        : isTablet
+        ? const EdgeInsets.only(left: 36, right: 36, bottom: 28)
+        : const EdgeInsets.only(left: 24, right: 24, bottom: 24);
+
+    final double height = isDesktop
+        ? 72
+        : isTablet
+        ? 68
+        : 64;
+
+    // Responsive border radius
+    final double borderRadius = isDesktop
+        ? 36
+        : isTablet
+        ? 34
+        : 32;
 
     return Container(
-      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
-      height: 64,
+      margin: margin,
+      height: height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
@@ -28,16 +51,36 @@ class AppBottomNav extends StatelessWidget {
               color: (isDark ? Colors.black : Colors.white30).withValues(
                 alpha: 0.7,
               ),
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_rounded, 'Home'),
-                _buildNavItem(1, Icons.auto_stories_rounded, 'Library'),
-                _buildNavItem(2, Icons.explore_rounded, 'Discover'),
-                _buildNavItem(3, Icons.more_horiz_rounded, 'More'),
+                _buildNavItem(
+                  0,
+                  Icons.home_rounded,
+                  'Home',
+                  isTablet || isDesktop,
+                ),
+                _buildNavItem(
+                  1,
+                  Icons.auto_stories_rounded,
+                  'Library',
+                  isTablet || isDesktop,
+                ),
+                _buildNavItem(
+                  2,
+                  Icons.explore_rounded,
+                  'Discover',
+                  isTablet || isDesktop,
+                ),
+                _buildNavItem(
+                  3,
+                  Icons.more_horiz_rounded,
+                  'More',
+                  isTablet || isDesktop,
+                ),
               ],
             ),
           ),
@@ -46,7 +89,7 @@ class AppBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, bool showLabel) {
     final isActive = currentIndex == index;
 
     return Expanded(
@@ -90,19 +133,21 @@ class AppBottomNav extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    style: TextStyle(
-                      color: isActive ? AppColors.primary : Colors.grey,
-                      fontSize: 10,
-                      fontWeight: isActive
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                  if (showLabel) ...[
+                    const SizedBox(height: 2),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      style: TextStyle(
+                        color: isActive ? AppColors.primary : Colors.grey,
+                        fontSize: 10,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      child: Text(label),
                     ),
-                    child: Text(label),
-                  ),
+                  ],
                 ],
               ),
             ),

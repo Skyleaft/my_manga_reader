@@ -164,6 +164,44 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _fetchData(refresh: true);
   }
 
+  SliverGridDelegateWithFixedCrossAxisCount _buildGridDelegate() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 768;
+    final isDesktop = screenWidth >= 1024;
+
+    // Responsive grid configuration
+    final int crossAxisCount = isDesktop
+        ? 5 // Desktop: 5 columns
+        : isTablet
+        ? 3 // Tablet: 3 columns
+        : 2; // Mobile: 2 columns
+
+    final double mainAxisSpacing = isDesktop
+        ? 32 // Desktop: larger spacing
+        : isTablet
+        ? 28 // Tablet: medium spacing
+        : 24; // Mobile: smaller spacing
+
+    final double crossAxisSpacing = isDesktop
+        ? 24 // Desktop: larger spacing
+        : isTablet
+        ? 20 // Tablet: medium spacing
+        : 16; // Mobile: smaller spacing
+
+    final double childAspectRatio = isDesktop
+        ? 0.75 // Desktop: wider cards
+        : isTablet
+        ? 0.70 // Tablet: medium aspect ratio
+        : 0.65; // Mobile: taller cards
+
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: mainAxisSpacing,
+      crossAxisSpacing: crossAxisSpacing,
+      childAspectRatio: childAspectRatio,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -228,12 +266,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 24,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.65,
-                  ),
+                  gridDelegate: _buildGridDelegate(),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index == _items.length) {
                       return const Center(child: CircularProgressIndicator());
