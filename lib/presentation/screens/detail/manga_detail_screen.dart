@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../data/models/library_manga.dart';
 import '../../../data/models/manga_detail.dart';
 import '../../../data/models/progression.dart';
@@ -10,6 +13,7 @@ import '../../../data/services/library_service.dart';
 import '../../../data/services/manga_api_service.dart';
 import '../../../data/services/progression_service.dart';
 import '../../../routes/app_pages.dart';
+import 'package:intl/intl.dart';
 
 class MangaDetailScreen extends StatefulWidget {
   final MangaDetail manga;
@@ -77,7 +81,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
           manga.id,
           manga.title,
           manga.author,
-          manga.imageUrl,
+          manga.displayImageUrl,
           manga.url,
           manga.type ?? 'MANGA', // Use manga type or default to MANGA
         );
@@ -108,43 +112,106 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Gradient
+          // Background Image with Parallax Effect
           _buildHeroSection(context),
 
           // Scrollable Content
           CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 300), // Offset for hero
+              SliverAppBar(
+                expandedHeight: 400,
+                floating: false,
+                pinned: false,
+                snap: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: _buildHeroSection(context),
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: Container(
+                  margin: const EdgeInsets.only(left: 16, top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                actions: [
+                  if (manga.url != null)
                     Container(
-                      width: double.infinity,
+                      margin: const EdgeInsets.only(right: 8, top: 8),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundLight,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
                       ),
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildMainInfo(isDark),
-                          const SizedBox(height: 16),
-                          _buildGenreTags(),
-                          const SizedBox(height: 24),
-                          _buildSynopsis(),
-                          const SizedBox(height: 24),
-                          _buildActionButtons(context),
-                          const SizedBox(height: 32),
-                          _buildChapterListHeader(context),
-                        ],
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.public,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => launchUrlString(manga.url!),
                       ),
                     ),
-                  ],
+                  Container(
+                    margin: const EdgeInsets.only(right: 16, top: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.share,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.backgroundDark
+                        : AppColors.backgroundLight,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildMainInfoSection(isDark),
+                      const SizedBox(height: 16),
+                      _buildStatsRow(),
+                      const SizedBox(height: 16),
+                      // Divider before genre section
+                      Container(
+                        height: 1,
+                        color: AppColors.primary.withOpacity(0.2),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      _buildGenreTags(),
+                      const SizedBox(height: 24),
+                      _buildSynopsis(),
+                      const SizedBox(height: 24),
+                      _buildActionButtons(context),
+                      const SizedBox(height: 32),
+                      _buildChapterListHeader(context),
+                    ],
+                  ),
                 ),
               ),
               _buildChapterListSliver(context, isDark),
@@ -160,9 +227,6 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
               ),
             ],
           ),
-
-          // Top Navigation Bar
-          _buildTopNav(context),
         ],
       ),
     );
@@ -227,115 +291,84 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
   }
 
   Widget _buildHeroSection(BuildContext context) {
+    final imageUrl = _apiService.getLocalImageUrl(
+      manga.localImageUrl,
+      manga.imageUrl,
+    );
+
     return Container(
       height: 400,
       width: double.infinity,
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: NetworkImage(manga.imageUrl),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withOpacity(0.4),
-              AppColors.backgroundDark.withOpacity(0.8),
-              AppColors.backgroundDark,
-            ],
-            stops: const [0.0, 0.4, 0.8, 1.0],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopNav(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildRoundIconButton(
-              icon: Icons.arrow_back,
-              onPressed: () => Navigator.pop(context),
-            ),
-            Row(
-              children: [
-                if (manga.url != null)
-                  _buildRoundIconButton(
-                    icon: Icons.public,
-                    onPressed: () => launchUrlString(manga.url!),
-                  ),
-                const SizedBox(width: 8),
-                _buildRoundIconButton(icon: Icons.share, onPressed: () {}),
-              ],
-            ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withOpacity(0.2),
+            Colors.black.withOpacity(0.4),
+            AppColors.backgroundDark,
           ],
+          stops: const [0.0, 0.4, 0.7, 1.0],
         ),
       ),
+      child: imageUrl.isNotEmpty
+          ? Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  height: 400,
+                  color: Colors.grey[800],
+                  child: const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 400,
+                  color: Colors.grey[800],
+                  child: const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 48,
+                      color: Colors.white70,
+                    ),
+                  ),
+                );
+              },
+            )
+          : Container(
+              height: 400,
+              color: Colors.grey[800],
+              child: const Center(
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 48,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
     );
   }
 
-  Widget _buildRoundIconButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 20),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  Widget _buildMainInfo(bool isDark) {
+  Widget _buildStatsRow() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                manga.title,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'By ${manga.author}',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Rating
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Row(
               children: [
-                const Icon(Icons.star, color: AppColors.primary, size: 20),
+                const Icon(Icons.star, color: AppColors.primary, size: 24),
                 const SizedBox(width: 4),
                 Text(
-                  manga.rating.toString(),
+                  manga.rating?.toString() ?? '0.0',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
@@ -343,10 +376,155 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
               ],
             ),
             Text(
-              manga.reviewCount,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              '12.5k reviews',
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ],
+        ),
+        const SizedBox(width: 24),
+        // Divider
+        Container(
+          height: 32,
+          width: 1,
+          color: AppColors.primary.withOpacity(0.2),
+        ),
+        const SizedBox(width: 24),
+        // Chapters
+        Column(
+          children: [
+            Text(
+              _chapters.length.toString(),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              'Chapters',
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 24),
+        // Divider
+        Container(
+          height: 32,
+          width: 1,
+          color: AppColors.primary.withOpacity(0.2),
+        ),
+        const SizedBox(width: 24),
+        // Reads
+        Column(
+          children: [
+            Text(
+              formatViewCount(manga.totalView),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              'Reads',
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainInfoSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status badge
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'TRENDING #1',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                manga.status?.toUpperCase() ?? 'ONGOING',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Title
+        Text(
+          manga.title,
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+            shadows: [
+              Shadow(
+                color: isDark ? Colors.black87 : Colors.white70,
+                offset: Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Author
+        Text(
+          'By ${manga.author}',
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black54,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            shadows: [
+              Shadow(
+                color: isDark ? Colors.black87 : Colors.white70,
+                offset: Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -357,14 +535,19 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        ...manga.genres.map(
-          (genre) => _buildTag(
-            genre,
-            AppColors.primary.withOpacity(0.2),
-            AppColors.primary,
+        if (manga.genres != null)
+          ...manga.genres!.map(
+            (genre) => _buildTag(
+              genre,
+              AppColors.primary.withOpacity(0.2),
+              AppColors.primary,
+            ),
           ),
+        _buildTag(
+          manga.status?.toUpperCase() ?? 'ONGOING',
+          Colors.grey.withOpacity(0.2),
+          Colors.grey,
         ),
-        _buildTag('ONGOING', Colors.grey.withOpacity(0.2), Colors.grey),
       ],
     );
   }
@@ -401,8 +584,12 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          manga.synopsis,
-          style: const TextStyle(color: Colors.grey, height: 1.6, fontSize: 14),
+          manga.description ?? 'No description available',
+          style: const TextStyle(
+            color: Colors.blueGrey,
+            height: 1.6,
+            fontSize: 14,
+          ),
         ),
       ],
     );
@@ -614,7 +801,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Scraping chapters...')),
                   );
-                  await _apiService.scrapChapterPages(manga.id);
+                  await _apiService.scrapChapterPagesNew(manga.id);
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -707,8 +894,8 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
     final bool isAvailable = chapter.isChapterAvailable;
     final Color chapterBgColor = isAvailable
         ? isDark
-              ? Colors.white.withOpacity(0.08)
-              : Colors.black.withOpacity(0.05)
+              ? AppColors.slate700.withValues(alpha: 0.1)
+              : AppColors.primary.withValues(alpha: 0.1)
         : Colors.grey.shade600;
     final Color textColor = isDark ? Colors.white : Colors.black87;
 
@@ -717,14 +904,14 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
           ? () =>
                 _navigateToReader(context, chapter.chapterNumber, chapter.title)
           : null,
-      borderRadius: BorderRadius.circular(36),
+      borderRadius: BorderRadius.circular(16),
       child: Opacity(
         opacity: isAvailable ? 1.0 : 0.6,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: chapterBgColor,
-            borderRadius: BorderRadius.circular(36),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -732,37 +919,108 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Left side: Chapter number and info
+                  Row(
                     children: [
-                      Text(
-                        chapter.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: textColor,
+                      // Chapter number circle
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.slate700.withValues(alpha: 0.4)
+                              : AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            chapter.chapterNumber.toInt().toString(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: textColor,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${chapter.date.year}-${chapter.date.month.toString().padLeft(2, '0')}-${chapter.date.day.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: textColor.withOpacity(0.7),
-                        ),
+                      const SizedBox(width: 12),
+                      // Chapter info
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                chapter.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Provider badge icon
+                              if (chapter.chapterProviderIcon != null)
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child:
+                                      chapter.chapterProviderIcon!
+                                          .toLowerCase()
+                                          .endsWith('.ico')
+                                      ? Icon(
+                                          Icons.link,
+                                          size: 14,
+                                          color: textColor.withOpacity(0.5),
+                                        )
+                                      : Image.network(
+                                          chapter.chapterProviderIcon!,
+                                          width: 16,
+                                          height: 16,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Icon(
+                                                    Icons.link,
+                                                    size: 14,
+                                                    color: textColor
+                                                        .withOpacity(0.5),
+                                                  ),
+                                        ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(chapter.date),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: textColor.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                  // Right side: Status and arrow
                   Row(
                     children: [
-                      _buildChapterStatus(chapter),
-                      const SizedBox(width: 8),
                       _buildCompletionBadge(chapter.chapterNumber),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right,
+                        color: textColor.withOpacity(0.5),
+                        size: 20,
+                      ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 8),
+              // Progression bar
               _buildProgressionBar(chapter.chapterNumber),
             ],
           ),
@@ -831,18 +1089,15 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.9),
-                AppColors.primary.withOpacity(0.6),
+                AppColors.primary.withOpacity(0.4),
+                AppColors.primary.withOpacity(0.4),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.8),
-              width: 1,
-            ),
+
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withOpacity(0.2),
                 blurRadius: 4,
                 spreadRadius: 1,
                 offset: const Offset(0, 2),
@@ -855,7 +1110,7 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
               Icon(Icons.check_circle, color: Colors.white, size: 14),
               const SizedBox(width: 4),
               Text(
-                'COMPLETED',
+                'READ',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 9,

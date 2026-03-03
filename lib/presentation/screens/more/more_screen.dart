@@ -207,18 +207,6 @@ class MoreScreen extends StatelessWidget {
               ],
             ),
           ),
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: const Text('Edit Profile', style: TextStyle(fontSize: 12)),
-          ),
         ],
       ),
     );

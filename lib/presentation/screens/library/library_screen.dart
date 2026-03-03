@@ -113,7 +113,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             decoration: BoxDecoration(
               color: isDark
                   ? AppColors.primary.withOpacity(0.1)
-                  : Colors.grey[200]!.withOpacity(0.5),
+                  : AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const TextField(
@@ -225,13 +225,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               if (!mounted) return;
               Navigator.pop(context); // Close loading dialog
 
-              final mangaDetail = MangaDetail.fromMap(
-                detailData,
-                imageUrl: _apiService.getLocalImageUrl(
-                  detailData['localImageUrl'] as String?,
-                  detailData['imageUrl'] as String?,
-                ),
-              );
+              final mangaDetail = MangaDetail.fromMap(detailData);
 
               Navigator.pushNamed(
                 context,

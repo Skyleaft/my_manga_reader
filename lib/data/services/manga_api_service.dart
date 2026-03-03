@@ -161,11 +161,103 @@ class MangaApiService {
     try {
       final response = await _dio.get(
         '/api/scrapper/komiku/manga/search',
-        queryParameters: {'query': query},
+        queryParameters: {'keyword': query},
       );
       return (response.data as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
           .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchKiryuuManga({
+    String? keyword,
+    List<String>? genres,
+    String? status,
+    String? type,
+    int page = 1,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/api/scrapper/kiryuu/manga/search',
+        queryParameters: {
+          'keyword': keyword,
+          if (genres != null && genres.isNotEmpty) 'genres': genres,
+          'status': status,
+          'type': type,
+          'page': page,
+        },
+      );
+      return (response.data as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> scrapKiryuuManga(
+    String mangaUrl,
+    bool scrapChapters,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/scrapper/kiryuu/manga',
+        data: {'mangaUrl': mangaUrl, 'scrapChapters': scrapChapters},
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getKiryuuChapterPages(
+    String chapterUrl,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/scrapper/kiryuu/manga/pages',
+        data: {'chapterUrl': chapterUrl},
+      );
+      return (response.data as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getKiryuuAllChapters(int mangaId) async {
+    try {
+      final response = await _dio.get('/api/scrapper/kiryuu/manga/$mangaId');
+      return (response.data as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateMangaMetadata(String mangaId) async {
+    try {
+      await _dio.get('/api/scrapper/manga/$mangaId/metadata');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> scrapChapterPagesNew(String mangaId) async {
+    try {
+      await _dio.get('/api/scrapper/manga/$mangaId/chapter-pages');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> fixFile() async {
+    try {
+      await _dio.get('/api/scrapper/fixfile');
     } catch (e) {
       rethrow;
     }

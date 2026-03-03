@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "933021714823-5msjvbhrpm6c4745bis90hqg40le5gcj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_manga_reader",
+            "certificate_hash": "36a05291c3c4fa8e2ecf750af68bae193e93b06c"
+          }
+        },
+        {
+          "client_id": "933021714823-gadh4m86f494k5eqlru6jvpnurn8gm50.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_manga_reader",
+            "certificate_hash": "2280b680f8747cc404731154f4851d036b106341"
+          }
+        },
+        {
           "client_id": "933021714823-minviehc7717fov10v9fr1a5rqm1imhv.apps.googleusercontent.com",
           "client_type": 3
         }

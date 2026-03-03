@@ -64,6 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '933021714823',
     projectId: 'mykomikid',
     storageBucket: 'mykomikid.firebasestorage.app',
+    androidClientId: '933021714823-5msjvbhrpm6c4745bis90hqg40le5gcj.apps.googleusercontent.com',
     iosClientId: '933021714823-k8q9t0kud5ks7k30qc6qm2e170f7j5m5.apps.googleusercontent.com',
     iosBundleId: 'com.example.myMangaReader',
   );
@@ -74,6 +75,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '933021714823',
     projectId: 'mykomikid',
     storageBucket: 'mykomikid.firebasestorage.app',
+    androidClientId: '933021714823-5msjvbhrpm6c4745bis90hqg40le5gcj.apps.googleusercontent.com',
     iosClientId: '933021714823-k8q9t0kud5ks7k30qc6qm2e170f7j5m5.apps.googleusercontent.com',
     iosBundleId: 'com.example.myMangaReader',
   );

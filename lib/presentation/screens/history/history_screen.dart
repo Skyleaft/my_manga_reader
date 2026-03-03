@@ -53,13 +53,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final detailData = await _apiService.getMangaDetail(
             progression.mangaId,
           );
-          final mangaDetail = MangaDetail.fromMap(
-            detailData,
-            imageUrl: _apiService.getLocalImageUrl(
-              detailData['localImageUrl'] as String?,
-              detailData['imageUrl'] as String?,
-            ),
-          );
+          final mangaDetail = MangaDetail.fromMap(detailData);
           details.add(mangaDetail);
         } catch (e) {
           // Skip manga that can't be loaded
@@ -161,7 +155,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             decoration: BoxDecoration(
               color: isDark
                   ? AppColors.primary.withOpacity(0.1)
-                  : Colors.grey[200]!.withOpacity(0.5),
+                  : AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const TextField(
@@ -265,7 +259,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF23170F) : Colors.white,
+        color: isDark
+            ? AppColors.slate800.withValues(alpha: 0.8)
+            : Colors.white70.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -299,11 +295,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   borderRadius: BorderRadius.circular(12),
                   color: isDark ? Colors.grey[800] : Colors.grey[200],
                 ),
-                child: mangaDetail?.imageUrl != null
+                child: mangaDetail?.displayImageUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          mangaDetail!.imageUrl,
+                          mangaDetail!.displayImageUrl,
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;

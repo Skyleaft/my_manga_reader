@@ -16,7 +16,7 @@ class AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth >= 768;
+    final isTablet = screenWidth >= 600;
     final isDesktop = screenWidth >= 1024;
 
     // Responsive padding and height
@@ -48,34 +48,39 @@ class AppBottomNav extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: (isDark ? Colors.black : Colors.white30).withValues(
-                alpha: 0.7,
-              ),
+              color:
+                  (isDark
+                          ? AppColors.backgroundDark
+                          : AppColors.backgroundLight)
+                      .withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(
+                  context,
                   0,
                   Icons.home_rounded,
                   'Home',
                   isTablet || isDesktop,
                 ),
                 _buildNavItem(
+                  context,
                   1,
                   Icons.auto_stories_rounded,
                   'Library',
                   isTablet || isDesktop,
                 ),
                 _buildNavItem(
+                  context,
                   2,
                   Icons.explore_rounded,
                   'Discover',
                   isTablet || isDesktop,
                 ),
                 _buildNavItem(
+                  context,
                   3,
                   Icons.more_horiz_rounded,
                   'More',
@@ -89,7 +94,13 @@ class AppBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, bool showLabel) {
+  Widget _buildNavItem(
+    BuildContext context,
+    int index,
+    IconData icon,
+    String label,
+    bool showLabel,
+  ) {
     final isActive = currentIndex == index;
 
     return Expanded(
@@ -128,6 +139,8 @@ class AppBottomNav extends StatelessWidget {
                         icon,
                         color: isActive
                             ? AppColors.primary
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white70
                             : AppColors.secondary,
                         size: isActive ? 26 : 24,
                       ),

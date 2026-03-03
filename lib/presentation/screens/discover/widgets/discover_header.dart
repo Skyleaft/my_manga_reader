@@ -39,12 +39,12 @@ class DiscoverHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Discover',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                  color: isDark ? Colors.white : AppColors.secondary,
                 ),
               ),
               Row(
@@ -80,8 +80,8 @@ class DiscoverHeader extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: isDark
-                  ? AppColors.primary.withOpacity(0.05)
-                  : Colors.grey[100],
+                  ? AppColors.primary.withOpacity(0.1)
+                  : AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
@@ -174,10 +174,18 @@ class DiscoverHeader extends StatelessWidget {
           children: [
             Text(
               'Sort: $label',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.black54),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 18,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
           ],
         ),
       ),
@@ -197,7 +205,7 @@ class DiscoverHeader extends StatelessWidget {
         child: Icon(
           currentOrderBy == 'asc' ? Icons.south : Icons.north,
           size: 18,
-          color: AppColors.primary,
+          color: isDark ? Colors.white70 : AppColors.primary,
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../utils/formatters.dart';
 import '../../data/models/manga_summary.dart';
 
 class DiscoverCard extends StatelessWidget {

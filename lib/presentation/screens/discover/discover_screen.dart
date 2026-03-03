@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/discover_card.dart';
 import '../../../data/models/manga_detail.dart';
 import '../../../data/models/manga_summary.dart';
@@ -277,7 +278,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       title: item.title,
                       type: item.type,
                       latestChapter: item.latestChapter,
-                      views: '${(item.totalView / 1000).toStringAsFixed(1)}K',
+                      views: formatViewCount(item.totalView),
                       genres: item.genres ?? [],
                       status: item.status,
                       imageUrl: _apiService.getLocalImageUrl(
@@ -299,13 +300,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           if (!mounted) return;
                           Navigator.pop(context); // Close loading dialog
 
-                          final mangaDetail = MangaDetail.fromMap(
-                            detailData,
-                            imageUrl: _apiService.getLocalImageUrl(
-                              detailData['localImageUrl'] as String?,
-                              detailData['imageUrl'] as String?,
-                            ),
-                          );
+                          final mangaDetail = MangaDetail.fromMap(detailData);
 
                           Navigator.pushNamed(
                             context,
