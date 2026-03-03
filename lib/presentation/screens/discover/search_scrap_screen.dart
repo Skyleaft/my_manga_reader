@@ -23,6 +23,9 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
   bool _isLoadingProviders = false;
   List<SearchResult> _searchResults = [];
   List<Map<String, dynamic>> _providers = [];
+  List<String>? _selectedGenres;
+  String? _selectedStatus;
+  String? _selectedType;
   String? _error;
 
   String _selectedProviderName = '';
@@ -100,8 +103,11 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
     try {
       final results = await _apiService.searchScrapSource(
         keyword: query,
+        genres: _selectedGenres,
+        status: _selectedStatus,
+        type: _selectedType,
         page: _currentPage,
-        provider: _selectedProviderName, // ✅ FIX pakai providerName
+        provider: _selectedProviderName,
       );
 
       // Check if this request is still the latest one
@@ -143,60 +149,6 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
         _error = e.toString();
         _isLoadingSearch = false;
       });
-    }
-  }
-
-  Future<void> _performFilteredSearch({
-    String? keyword,
-    List<String>? genres,
-    String? status,
-    String? type,
-  }) async {
-    setState(() {
-      _isLoadingSearch = true;
-      _error = null;
-      _currentPage = 1;
-      _hasMoreResults = true;
-      _searchResults = [];
-    });
-
-    try {
-      final results = await _apiService.searchScrapSource(
-        keyword: keyword ?? _searchQuery,
-        genres: genres,
-        status: status,
-        type: type,
-        page: _currentPage,
-        provider: _selectedProviderName,
-      );
-
-      if (mounted) {
-        setState(() {
-          _searchResults = results
-              .map((item) => SearchResult.fromJson(item))
-              .toList();
-          _isLoadingSearch = false;
-
-          // Set page size based on provider
-          final pageSize = _selectedProviderName.toLowerCase() == 'kiryuu'
-              ? 24
-              : 10;
-          // Only set hasMoreResults to false if we got fewer results than page size
-          // This indicates we've reached the last page
-          if (results.length < pageSize) {
-            _hasMoreResults = false;
-          } else {
-            _hasMoreResults = true;
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoadingSearch = false;
-        });
-      }
     }
   }
 
@@ -353,11 +305,19 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                _performFilteredSearch(
-                  genres: selectedGenres.isEmpty ? null : selectedGenres,
-                  type: selectedTypes.isEmpty ? null : selectedTypes.first,
-                  status: selectedStatus,
-                );
+
+                _selectedGenres = selectedGenres.isEmpty
+                    ? null
+                    : List.from(selectedGenres);
+                _selectedType = selectedTypes.isEmpty
+                    ? null
+                    : selectedTypes.first;
+                _selectedStatus = selectedStatus;
+
+                _currentPage = 1;
+                _hasMoreResults = true;
+
+                _performSearch();
               },
               child: const Text('Apply Filter'),
             ),
@@ -369,26 +329,36 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+    final textColor = isDarkMode ? Colors.white : AppColors.primary;
+    final cardColor = isDarkMode ? AppColors.cardDark : Colors.white;
+    final shadowColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.black.withOpacity(0.1);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Search Manga',
           style: TextStyle(
-            color: AppColors.primary,
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune, color: AppColors.primary),
+            icon: Icon(Icons.tune, color: textColor),
             onPressed: () {
               _showFilterDialog();
             },
@@ -402,11 +372,11 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: shadowColor,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -414,23 +384,29 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
               ),
               child: Row(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: Icon(Icons.search, color: Colors.grey),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Icon(
+                      Icons.search,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                    ),
                   ),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Search titles, authors, or genres...',
+                        hintStyle: TextStyle(
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           vertical: 12,
                           horizontal: 8,
                         ),
                         isDense: true,
                       ),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       onSubmitted: (value) {
                         // Trigger search when Enter is pressed
                         _searchQuery = value.trim();
@@ -452,11 +428,11 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: shadowColor,
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -466,18 +442,23 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                   value: _selectedProviderName,
                   isExpanded: true,
                   underline: Container(),
+                  dropdownColor: cardColor,
+                  style: TextStyle(color: textColor, fontSize: 14),
                   items: _providers.map((provider) {
                     return DropdownMenuItem<String>(
                       value: provider['providerName'],
                       child: Text(
                         provider['providerName'],
-                        style: const TextStyle(fontSize: 14),
+                        style: TextStyle(color: textColor, fontSize: 14),
                       ),
                     );
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedProviderName = value!;
+                      _selectedGenres = null;
+                      _selectedStatus = null;
+                      _selectedType = null;
                       _currentPage = 1;
                       _hasMoreResults = true;
                       _searchResults = [];
@@ -499,8 +480,8 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                   _searchQuery.isNotEmpty
                       ? 'Search Results (${_searchResults.length})'
                       : 'Search Results (0)',
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -536,12 +517,14 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: isDarkMode
+                      ? Colors.red.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                  style: TextStyle(color: Colors.red, fontSize: 12),
                 ),
               ),
             ),
@@ -552,10 +535,12 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                 _searchResults.isEmpty &&
                     !_isLoadingSearch &&
                     _searchQuery.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Search for manga to get started',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                      ),
                     ),
                   )
                 : _buildResultsList(),
@@ -566,6 +551,13 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
   }
 
   Widget _buildResultsList() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDarkMode ? AppColors.cardDark : Colors.white;
+    final textColor = isDarkMode ? Colors.white : AppColors.primary;
+    final shadowColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.black.withOpacity(0.1);
+
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollUpdateNotification) {
@@ -584,11 +576,17 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
         itemBuilder: (context, index) {
           if (index < _searchResults.length) {
             final item = _searchResults[index];
-            return _buildResultCard(item);
+            return _buildResultCard(
+              item,
+              isDarkMode,
+              cardColor,
+              textColor,
+              shadowColor,
+            );
           } else {
             // Loading indicator at the bottom
-            return const Padding(
-              padding: EdgeInsets.all(16),
+            return Padding(
+              padding: const EdgeInsets.all(16),
               child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
@@ -599,10 +597,17 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
     );
   }
 
-  Widget _buildResultCard(SearchResult item) {
+  Widget _buildResultCard(
+    SearchResult item,
+    bool isDarkMode,
+    Color cardColor,
+    Color textColor,
+    Color shadowColor,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
+      color: cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -624,18 +629,23 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                         errorBuilder: (_, __, ___) => Container(
                           width: 80,
                           height: 110,
-                          color: Colors.grey[300],
-                          child: const Icon(
+                          color: isDarkMode
+                              ? Colors.grey[700]
+                              : Colors.grey[300],
+                          child: Icon(
                             Icons.broken_image,
-                            color: Colors.grey,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey,
                           ),
                         ),
                       )
                     : Container(
                         width: 80,
                         height: 110,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image, color: Colors.grey),
+                        color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                        child: Icon(
+                          Icons.image,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                        ),
                       ),
               ),
 
@@ -651,20 +661,27 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                       item.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.type,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.genre,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     if (item.lastUpdateText.isNotEmpty)
@@ -672,9 +689,9 @@ class _SearchScrapScreenState extends State<SearchScrapScreen> {
                         item.lastUpdateText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Colors.brown,
+                          color: isDarkMode ? Colors.brown[200] : Colors.brown,
                         ),
                       ),
                     const SizedBox(height: 4),
