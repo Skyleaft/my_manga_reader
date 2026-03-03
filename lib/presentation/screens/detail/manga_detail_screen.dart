@@ -112,9 +112,6 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Parallax Effect
-          _buildHeroSection(context),
-
           // Scrollable Content
           CustomScrollView(
             slivers: [
@@ -345,25 +342,6 @@ class _MangaDetailScreenState extends State<MangaDetailScreen> {
                   ),
                 ),
               ),
-
-        // Gradient overlay
-        Container(
-          height: 400,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withOpacity(0.2),
-                Colors.black.withOpacity(0.4),
-                AppColors.backgroundDark,
-              ],
-              stops: const [0.0, 0.4, 0.7, 1.0],
-            ),
-          ),
-        ),
 
         // Centered manga cover thumbnail
         Center(
