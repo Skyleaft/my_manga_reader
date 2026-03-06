@@ -28,7 +28,6 @@ class _ReaderScreenState extends State<ReaderScreen>
   bool _showUI = true;
   bool _isLoading = false;
   Timer? _debounceTimer;
-  late List<GlobalKey> _pageKeys;
   bool _isSliderScrolling = false;
 
   final TransformationController _transformationController =
@@ -52,8 +51,6 @@ class _ReaderScreenState extends State<ReaderScreen>
 
     _chapterTitle = widget.content.chapterTitle;
     _currentChapterNumber = widget.content.currentChapterNumber;
-
-    _pageKeys = List.generate(_pageUrls.length, (_) => GlobalKey());
 
     _animationController = AnimationController(vsync: this);
 
@@ -98,50 +95,29 @@ class _ReaderScreenState extends State<ReaderScreen>
   void _onScroll() {
     if (_isSliderScrolling) return;
     if (!_scrollController.hasClients) return;
+    if (_pageUrls.isEmpty) return;
 
-    final viewportHeight = MediaQuery.of(context).size.height;
-    final scrollPosition = _scrollController.position;
+    final position = _scrollController.position;
 
-    // Jika sudah di paling bawah
-    if (scrollPosition.pixels >= scrollPosition.maxScrollExtent - 10) {
-      final lastPage = _pageUrls.length;
+    if (!position.hasContentDimensions) return;
 
-      if (_currentPage != lastPage) {
-        setState(() {
-          _currentPage = lastPage;
-          _progress = 1.0;
-        });
+    final maxScroll = position.maxScrollExtent;
 
-        _debounceSaveProgression();
-      }
-      return;
-    }
+    if (maxScroll <= 0) return;
 
-    double closestDistance = double.infinity;
-    int visiblePage = _currentPage;
+    final currentScroll = position.pixels.clamp(0.0, maxScroll);
 
-    for (int i = 0; i < _pageKeys.length; i++) {
-      final pageContext = _pageKeys[i].currentContext;
-      if (pageContext == null) continue;
+    final progress = (currentScroll / maxScroll).clamp(0.0, 1.0);
 
-      final box = pageContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero);
+    final page = ((progress * (_pageUrls.length - 1)).round() + 1).clamp(
+      1,
+      _pageUrls.length,
+    );
 
-      final pageCenter = position.dy + box.size.height / 2;
-      final viewportCenter = viewportHeight / 2;
-
-      final distance = (pageCenter - viewportCenter).abs();
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        visiblePage = i + 1;
-      }
-    }
-
-    if (visiblePage != _currentPage) {
+    if (page != _currentPage) {
       setState(() {
-        _currentPage = visiblePage;
-        _progress = (visiblePage - 1) / (_pageUrls.length - 1);
+        _currentPage = page;
+        _progress = progress;
       });
 
       _debounceSaveProgression();
@@ -200,11 +176,6 @@ class _ReaderScreenState extends State<ReaderScreen>
               ),
             )
             .toList();
-
-        _pageKeys = List.generate(
-          _pageUrls.length,
-          (_) => GlobalKey(),
-        ); // penting
 
         _chapterTitle = targetChapter.title;
         _currentChapterNumber = targetChapter.chapterNumber;
@@ -355,45 +326,46 @@ class _ReaderScreenState extends State<ReaderScreen>
                         )
                       : CustomScrollView(
                           controller: _scrollController,
-                          cacheExtent: 3000,
+                          cacheExtent: 5000,
                           physics: const ClampingScrollPhysics(),
                           slivers: [
                             SliverList(
-                              delegate: SliverChildBuilderDelegate((
-                                context,
-                                index,
-                              ) {
-                                final url = _pageUrls[index];
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final url = _pageUrls[index];
 
-                                return Container(
-                                  key: _pageKeys[index],
-                                  width: screenWidth,
-                                  child: AppNetworkImage(
-                                    imageUrl: url,
-                                    fit: BoxFit.fitWidth,
+                                  return Container(
                                     width: screenWidth,
-                                    gaplessPlayback: true,
-                                    placeholder: Container(
-                                      height: screenWidth * 1.4,
+                                    child: AppNetworkImage(
+                                      imageUrl: url,
+                                      fit: BoxFit.fitWidth,
                                       width: screenWidth,
-                                      color: Colors.black,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                      gaplessPlayback: true,
+                                      placeholder: Container(
+                                        height: screenWidth * 1.4,
+                                        width: screenWidth,
+                                        color: Colors.black,
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: Container(
+                                        height: 200,
+                                        color: Colors.black,
+                                        child: const Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white24,
                                         ),
                                       ),
                                     ),
-                                    errorWidget: Container(
-                                      height: 200,
-                                      color: Colors.black,
-                                      child: const Icon(
-                                        Icons.broken_image,
-                                        color: Colors.white24,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }, childCount: _pageUrls.length),
+                                  );
+                                },
+                                childCount: _pageUrls.isEmpty
+                                    ? 0
+                                    : _pageUrls.length,
+                              ),
                             ),
                             const SliverToBoxAdapter(
                               child: SizedBox(height: 100),
@@ -568,8 +540,11 @@ class _ReaderScreenState extends State<ReaderScreen>
                         onChanged: (value) {
                           setState(() {
                             _progress = value;
+                            if (_pageUrls.isEmpty) return;
+
                             _currentPage =
-                                ((value * (_pageUrls.length - 1)).round() + 1);
+                                ((value * (_pageUrls.length - 1)).round() + 1)
+                                    .clamp(1, _pageUrls.length);
                           });
 
                           if (_scrollController.hasClients) {
@@ -577,7 +552,11 @@ class _ReaderScreenState extends State<ReaderScreen>
                                 _scrollController.position.maxScrollExtent;
                             final target = value * maxScroll;
 
-                            _scrollController.jumpTo(target);
+                            if (maxScroll > 0) {
+                              _scrollController.jumpTo(
+                                target.clamp(0, maxScroll),
+                              );
+                            }
                           }
                         },
                         onChangeEnd: (_) {
